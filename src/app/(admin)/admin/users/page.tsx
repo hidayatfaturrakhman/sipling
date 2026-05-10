@@ -30,10 +30,21 @@ export default function UsersPage() {
     let query = supabase
       .from('profiles')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .neq('role', 'admin'); // Default: sembunyikan admin
 
-    if (filterRole !== 'all') {
-      query = query.eq('role', filterRole);
+    if (filterRole === 'admin') {
+      query = supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'admin')
+        .order('created_at', { ascending: false });
+    } else if (filterRole === 'warga') {
+      query = supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'warga')
+        .order('created_at', { ascending: false });
     }
 
     const { data } = await query;
