@@ -66,7 +66,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
       <header className="bg-white shadow-sm lg:hidden">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 hover:bg-gray-100 rounded-lg"
@@ -75,7 +75,10 @@ export default function AdminLayout({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-lg font-bold text-blue-600">SIPLING Admin</h1>
+          <div className="flex items-center gap-2">
+            <img src="/favicon.svg" alt="Logo" className="w-8 h-8" />
+            <span className="text-lg font-bold text-blue-600">SIPLING</span>
+          </div>
           <button
             onClick={handleLogout}
             className="text-gray-600 p-2"
@@ -89,8 +92,14 @@ export default function AdminLayout({
 
       {/* Desktop Header */}
       <header className="bg-white shadow-sm hidden lg:block">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-blue-600">SIPLING Admin</h1>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <img src="/favicon.svg" alt="Logo" className="w-10 h-10" />
+            <div>
+              <h1 className="text-xl font-bold text-blue-600">SIPLING</h1>
+              <p className="text-xs text-gray-500">Admin Dashboard</p>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">{user.full_name || user.email}</span>
             <button
@@ -153,7 +162,12 @@ export default function AdminLayout({
           </nav>
         </aside>
 
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 lg:p-8">
+          {children}
+          <footer className="mt-8 pt-4 border-t text-center text-sm text-gray-500">
+            Aplikasi SIPLING by Hidayat Faturrakhman
+          </footer>
+        </main>
       </div>
     </div>
   );
