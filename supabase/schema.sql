@@ -6,8 +6,14 @@ CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   full_name TEXT,
+  nik TEXT,
+  phone TEXT,
+  address TEXT,
+  latitude FLOAT,
+  longitude FLOAT,
   role TEXT NOT NULL CHECK (role IN ('admin', 'warga')) DEFAULT 'warga',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Categories table
@@ -45,6 +51,9 @@ ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 -- Profiles policies
 CREATE POLICY "Users can view all profiles" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admins can view all profiles" ON profiles FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
 -- Categories policies
 CREATE POLICY "Anyone can view active categories" ON categories FOR SELECT USING (true);
@@ -68,12 +77,22 @@ INSERT INTO categories (name, description, icon) VALUES
   ('lainnya', 'Lainnya', '📌')
 ON CONFLICT (name) DO NOTHING;
 
--- Trigger to auto-create profile on signup
+-- Trigger to auto-create profile on signup with extended fields
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role)
-  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'full_name', COALESCE(NEW.raw_user_meta_data->>'role', 'warga'));
+  INSERT INTO public.profiles (id, email, full_name, role, nik, phone, address, latitude, longitude)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    NEW.raw_user_meta_data->>'full_name',
+    COALESCE(NEW.raw_user_meta_data->>'role', 'warga'),
+    NEW.raw_user_meta_data->>'nik',
+    NEW.raw_user_meta_data->>'phone',
+    NEW.raw_user_meta_data->>'address',
+    (NEW.raw_user_meta_data->>'latitude')::float,
+    (NEW.raw_user_meta_data->>'longitude')::float
+  );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -97,9 +98,12 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Belum punya akun? Hubungi admin untuk daftar
-        </p>
+        <div className="text-center mt-6">
+          <span className="text-gray-500 text-sm">Belum punya akun? </span>
+          <Link href="/register" className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
+            Daftar Sekarang
+          </Link>
+        </div>
       </div>
     </div>
   );
