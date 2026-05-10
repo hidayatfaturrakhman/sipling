@@ -174,7 +174,7 @@ export default function AdminLaporanPage() {
     else handleZoomOut();
   };
 
-  // Drag functionality
+  // Drag functionality with boundary constraints
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
@@ -188,7 +188,21 @@ export default function AdminLaporanPage() {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging && lightboxZoom > 1) {
-      setDragPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+      const container = e.currentTarget;
+      const containerRect = container.getBoundingClientRect();
+      const scaledWidth = containerRect.width * lightboxZoom;
+      const scaledHeight = containerRect.height * lightboxZoom;
+
+      const maxX = Math.max(0, (scaledWidth - containerRect.width) / 2);
+      const maxY = Math.max(0, (scaledHeight - containerRect.height) / 2);
+
+      let newX = e.clientX - dragStart.x;
+      let newY = e.clientY - dragStart.y;
+
+      newX = Math.max(-maxX, Math.min(maxX, newX));
+      newY = Math.max(-maxY, Math.min(maxY, newY));
+
+      setDragPosition({ x: newX, y: newY });
     }
   };
 
