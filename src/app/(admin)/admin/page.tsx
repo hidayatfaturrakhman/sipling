@@ -132,6 +132,11 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const openGoogleMaps = (report: Report) => {
+    const address = encodeURIComponent(report.address || `${report.latitude}, ${report.longitude}`);
+    window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus laporan ini?')) return;
     await supabase.from('reports').delete().eq('id', id);
@@ -252,13 +257,24 @@ export default function AdminDashboardPage() {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {selectedReport.photo_url && (
-                <div>
+                <div className="relative">
                   <p className="text-xs text-gray-500 mb-1">Foto Laporan</p>
                   <img
                     src={selectedReport.photo_url}
                     alt="Foto Laporan"
                     className="w-full h-40 object-cover rounded-lg"
                   />
+                  <button
+                    onClick={() => openGoogleMaps(selectedReport)}
+                    className="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100"
+                    title="Buka di Google Maps"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/>
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#4285F4"/>
+                      <path d="M12 2v7c0 3.5-4 8-4 8s4 3.5 4 7" fill="#FBBC05"/>
+                    </svg>
+                  </button>
                 </div>
               )}
 
