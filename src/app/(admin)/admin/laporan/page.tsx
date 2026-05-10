@@ -22,6 +22,7 @@ interface Report {
 
 export default function AdminLaporanPage() {
   const [reports, setReports] = useState<Report[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -32,11 +33,20 @@ export default function AdminLaporanPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    // Reset to page 1 when filters change
+    if (filterCategory !== 'all' || filterStatus !== 'all' || search) {
+      setPage(1);
+    }
+  }, [filterCategory, filterStatus, search]);
+
+  useEffect(() => {
     const fetchReports = async () => {
+      setLoading(true);
       let query = supabase
         .from('reports')
-        .select('*, profiles(full_name, email)')
-        .order('created_at', { ascending: false });
+        .select('*, profiles(full_name, email)', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range((page - 1) * itemsPerPage, page * itemsPerPage - 1);
 
       if (filterCategory !== 'all') {
         query = query.eq('category', filterCategory);
@@ -44,29 +54,20 @@ export default function AdminLaporanPage() {
       if (filterStatus !== 'all') {
         query = query.eq('status', filterStatus);
       }
+      if (search) {
+        query = query.ilike('description', `%${search}%`);
+      }
 
-      const { data } = await query;
+      const { data, count } = await query;
       setReports(data || []);
+      setTotalCount(count || 0);
       setLoading(false);
     };
 
     fetchReports();
-  }, [filterCategory, filterStatus, supabase]);
+  }, [filterCategory, filterStatus, page, search, supabase]);
 
-  const filteredReports = reports.filter(r => {
-    const searchLower = search.toLowerCase();
-    return (
-      r.description?.toLowerCase().includes(searchLower) ||
-      r.address?.toLowerCase().includes(searchLower) ||
-      r.profiles?.email?.toLowerCase().includes(searchLower)
-    );
-  });
-
-  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
-  const paginatedReports = filteredReports.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleUpdateStatus = async (id: string, status: string) => {
     await supabase.from('reports').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
@@ -147,14 +148,14 @@ export default function AdminLaporanPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {paginatedReports.length === 0 ? (
+              {reports.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                     Tidak ada laporan
                   </td>
                 </tr>
               ) : (
-                paginatedReports.map((report) => (
+                reports.map((report: Report) => (
                   <tr key={report.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       {report.photo_url && (
