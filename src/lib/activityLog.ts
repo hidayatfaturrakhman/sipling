@@ -24,34 +24,20 @@ export async function logActivity(
 ) {
   const supabase = createClient();
 
-  try {
-    // If userId is provided, use it directly
-    if (!userId) {
-      const { data: { user } } = await supabase.auth.getUser();
-      userId = user?.id;
-    }
-
-    if (!userId) {
-      console.warn('Activity log: no user_id available');
-      return;
-    }
-
-    console.log('Logging activity:', { userId, action, description });
-
-    const { error } = await supabase.from('activity_logs').insert({
-      user_id: userId,
-      action,
-      details: description,
-    });
-
-    if (error) {
-      console.error('Failed to log activity:', error);
-    } else {
-      console.log('Activity logged successfully');
-    }
-  } catch (err) {
-    console.error('Error logging activity:', err);
+  const userIdToUse = userId;
+  if (!userIdToUse) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) return;
   }
+
+  const userIdFinal = userIdToUse || (await supabase.auth.getUser()).data.user?.id;
+  if (!userIdFinal) return;
+
+  await supabase.from('activity_logs').insert({
+    user_id: userIdFinal,
+    action,
+    details: description,
+  });
 }
 
 export const activityLabels: Record<ActivityAction, string> = {
