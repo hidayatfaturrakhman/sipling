@@ -36,6 +36,7 @@ export default function RiwayatPage() {
       .from('reports')
       .select('*')
       .eq('user_id', user.id)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (filterStatus !== 'all') {
@@ -50,7 +51,8 @@ export default function RiwayatPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus laporan ini?')) return;
 
-    const { error } = await supabase.from('reports').delete().eq('id', id);
+    // Soft delete - set deleted_at instead of actually deleting
+    const { error } = await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', id);
     if (!error) {
       setReports(reports.filter(r => r.id !== id));
     }

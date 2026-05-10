@@ -19,25 +19,29 @@ export default function DashboardPage() {
         .from('reports')
         .select('*')
         .eq('user_id', user.id)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(5);
 
       const { count: total } = await supabase
         .from('reports')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .is('deleted_at', null);
 
       const { count: pending } = await supabase
         .from('reports')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .is('deleted_at', null);
 
       const { count: resolved } = await supabase
         .from('reports')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('status', 'resolved');
+        .eq('status', 'resolved')
+        .is('deleted_at', null);
 
       setReports(reportsData || []);
       setStats({

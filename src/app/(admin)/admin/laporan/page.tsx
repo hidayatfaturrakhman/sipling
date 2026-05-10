@@ -54,6 +54,7 @@ export default function AdminLaporanPage() {
       let query = supabase
         .from('reports')
         .select('*, profiles(full_name, email)', { count: 'exact' })
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .range((page - 1) * itemsPerPage, page * itemsPerPage - 1);
 
@@ -133,7 +134,8 @@ export default function AdminLaporanPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus laporan ini?')) return;
-    await supabase.from('reports').delete().eq('id', id);
+    // Soft delete - set deleted_at instead of actually deleting
+    await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', id);
     setReports(reports.filter(r => r.id !== id));
     setSelectedReport(null);
   };

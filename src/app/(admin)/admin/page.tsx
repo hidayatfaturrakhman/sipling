@@ -39,6 +39,7 @@ export default function AdminDashboardPage() {
       let query = supabase
         .from('reports')
         .select('*, profiles(full_name, email)')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (filterCategory !== 'all') {
@@ -49,17 +50,20 @@ export default function AdminDashboardPage() {
 
       const { count: total } = await supabase
         .from('reports')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null);
 
       const { count: pending } = await supabase
         .from('reports')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .is('deleted_at', null);
 
       const { count: resolved } = await supabase
         .from('reports')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'resolved');
+        .eq('status', 'resolved')
+        .is('deleted_at', null);
 
       setReports(reportsData || []);
       setStats({ total: total || 0, pending: pending || 0, resolved: resolved || 0 });
@@ -123,7 +127,8 @@ export default function AdminDashboardPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus laporan ini?')) return;
-    await supabase.from('reports').delete().eq('id', id);
+    // Soft delete - set deleted_at instead of actually deleting
+    await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', id);
     setReports(reports.filter(r => r.id !== id));
     setStats(stats => ({ ...stats, total: stats.total - 1 }));
     setSelectedReport(null);
