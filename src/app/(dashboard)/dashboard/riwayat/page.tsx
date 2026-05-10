@@ -145,7 +145,7 @@ export default function RiwayatPage() {
               <div className="flex flex-col md:flex-row gap-4">
                 {report.photo_url && (
                   <img
-                    src={report.photo_url}
+                    src={report.photo_url.split(',')[0]}
                     alt="Foto"
                     className="w-full md:w-32 h-32 object-cover rounded-lg"
                   />

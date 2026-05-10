@@ -126,7 +126,7 @@ export default function DashboardPage() {
                 <div className="flex items-start gap-4">
                   {report.photo_url && (
                     <img
-                      src={report.photo_url}
+                      src={report.photo_url.split(',')[0]}
                       alt="Foto"
                       className="w-16 h-16 object-cover rounded-lg"
                     />

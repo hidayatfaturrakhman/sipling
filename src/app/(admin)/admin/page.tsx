@@ -199,7 +199,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-start gap-3">
                     {report.photo_url && (
                       <img
-                        src={report.photo_url}
+                        src={report.photo_url?.split(',')[0]}
                         alt="Foto"
                         className="w-12 h-12 object-cover rounded"
                       />

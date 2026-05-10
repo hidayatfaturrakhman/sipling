@@ -223,7 +223,7 @@ export default function AdminLaporanPage() {
                 <div className="flex gap-3">
                   {report.photo_url && (
                     <img
-                      src={report.photo_url}
+                      src={report.photo_url?.split(',')[0]}
                       alt="Foto"
                       className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                     />
@@ -280,7 +280,7 @@ export default function AdminLaporanPage() {
                     <td className="px-6 py-4">
                       {report.photo_url && (
                         <img
-                          src={report.photo_url}
+                          src={report.photo_url?.split(',')[0]}
                           alt="Foto"
                           className="w-12 h-12 object-cover rounded"
                         />
