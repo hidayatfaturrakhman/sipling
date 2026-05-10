@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface ValidationErrors {
@@ -32,8 +31,8 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailProvider, setEmailProvider] = useState('');
 
-  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
@@ -192,10 +191,18 @@ export default function RegisterPage() {
 
       if (signUpError) throw signUpError;
 
+      const emailDomain = formData.email.split('@')[1] || '';
+      const providers: Record<string, string> = {
+        'gmail.com': 'https://mail.google.com',
+        'yahoo.com': 'https://mail.yahoo.com',
+        'outlook.com': 'https://outlook.live.com',
+        'hotmail.com': 'https://outlook.live.com',
+        'live.com': 'https://outlook.live.com',
+        'icloud.com': 'https://mail.icloud.com',
+        'mail.com': 'https://www.mail.com',
+      };
+      setEmailProvider(providers[emailDomain] || 'https://mail.google.com');
       setSuccess(true);
-      setTimeout(() => {
-        router.push('/login');
-      }, 3000);
     } catch (err: any) {
       setError(err.message || 'Gagal pendaftaran');
     } finally {
@@ -207,17 +214,28 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[99999]">
+        <div className="bg-white rounded-xl max-w-sm w-full p-6 text-center">
           <div className="bg-green-100 rounded-full p-4 mb-4 inline-flex">
             <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Pendaftaran Berhasil!</h2>
-          <p className="text-gray-600 mb-2">Silakan verifikasi email Anda terlebih dahulu.</p>
-          <p className="text-sm text-gray-500 mb-4">Kami telah mengirim link verifikasi ke email Anda.</p>
-          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Pendaftaran Berhasil!</h2>
+          <p className="text-gray-600 text-sm mb-4">
+            Link verifikasi telah dikirim ke email:<br />
+            <span className="font-semibold">{formData.email}</span>
+          </p>
+          <p className="text-xs text-gray-500 mb-4">Silakan cek inbox atau folder spam untuk verifikasi.</p>
+          <a
+            href={emailProvider}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition mb-3"
+          >
+            Buka Email
+          </a>
+          <Link href="/login" className="block text-gray-500 hover:text-gray-700 text-sm">
             Kembali ke Login
           </Link>
         </div>
