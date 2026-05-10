@@ -17,8 +17,8 @@ export default function BuatLaporanPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,6 +26,7 @@ export default function BuatLaporanPage() {
   const [locationLoading, setLocationLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const MAX_PHOTOS = 5;
 
   const router = useRouter();
   const supabase = createClient();
@@ -84,8 +85,13 @@ export default function BuatLaporanPage() {
   }, [location]);
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length + photos.length > MAX_PHOTOS) {
+      setError(`Maksimal ${MAX_PHOTOS} foto`);
+      return;
+    }
+
+    for (const file of files) {
       if (file.size > 10 * 1024 * 1024) {
         setError('Foto maksimal 10MB');
         return;
@@ -93,21 +99,27 @@ export default function BuatLaporanPage() {
 
       try {
         const compressed = await compressImage(file);
-        setPhoto(compressed);
-        setPhotoPreview(URL.createObjectURL(compressed));
+        setPhotos(prev => [...prev, compressed]);
+        setPhotoPreviews(prev => [...prev, URL.createObjectURL(compressed)]);
         setError('');
       } catch (err) {
-        // Fallback to original if compression fails
-        setPhoto(file);
-        setPhotoPreview(URL.createObjectURL(file));
+        setPhotos(prev => [...prev, file]);
+        setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);
       }
     }
   };
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+    if (imageFiles.length + photos.length > MAX_PHOTOS) {
+      setError(`Maksimal ${MAX_PHOTOS} foto`);
+      return;
+    }
+
+    for (const file of imageFiles) {
       if (file.size > 10 * 1024 * 1024) {
         setError('Foto maksimal 10MB');
         return;
@@ -115,13 +127,18 @@ export default function BuatLaporanPage() {
 
       try {
         const compressed = await compressImage(file);
-        setPhoto(compressed);
-        setPhotoPreview(URL.createObjectURL(compressed));
+        setPhotos(prev => [...prev, compressed]);
+        setPhotoPreviews(prev => [...prev, URL.createObjectURL(compressed)]);
       } catch (err) {
-        setPhoto(file);
-        setPhotoPreview(URL.createObjectURL(file));
+        setPhotos(prev => [...prev, file]);
+        setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);
       }
     }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,8 +155,8 @@ export default function BuatLaporanPage() {
       return;
     }
 
-    if (!photo) {
-      setError('Upload foto terlebih dahulu');
+    if (photos.length === 0) {
+      setError('Upload minimal 1 foto');
       return;
     }
 
@@ -149,21 +166,24 @@ export default function BuatLaporanPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Silakan login terlebih dahulu');
 
-      let photoUrl = '';
+      // Upload photos and get URLs
+      const photoUrls: string[] = [];
+      for (const photo of photos) {
+        const fileName = `${Date.now()}-${Math.random()}-${photo.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('report-photos')
+          .upload(fileName, photo);
 
-      // Upload photo
-      const fileName = `${Date.now()}-${photo.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('report-photos')
-        .upload(fileName, photo);
+        if (uploadError) throw uploadError;
 
-      if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage
+          .from('report-photos')
+          .getPublicUrl(fileName);
 
-      const { data: urlData } = supabase.storage
-        .from('report-photos')
-        .getPublicUrl(fileName);
+        photoUrls.push(urlData.publicUrl);
+      }
 
-      photoUrl = urlData.publicUrl;
+      const photoUrl = photoUrls.join(','); // Store multiple URLs separated by comma
 
       // Get category name
       const selectedCategory = categories.find(c => c.id === category);
@@ -245,26 +265,45 @@ export default function BuatLaporanPage() {
 
         {/* Photo Upload */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-800 mb-4">Foto</h3>
+          <h3 className="font-semibold text-gray-800 mb-4">
+            Foto ({photos.length}/{MAX_PHOTOS})
+          </h3>
           <div
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => photos.length < MAX_PHOTOS && fileInputRef.current?.click()}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition"
+            className={`border-2 border-dashed rounded-lg p-4 text-center transition ${
+              photos.length > 0 ? 'border-gray-200' : 'border-gray-300'
+            } ${photos.length < MAX_PHOTOS ? 'cursor-pointer hover:border-blue-500' : 'cursor-not-allowed'}`}
           >
-            {photoPreview ? (
-              <div>
-                <img
-                  src={photoPreview}
-                  alt="Preview"
-                  className="max-h-64 mx-auto rounded-lg"
-                />
-                <p className="text-sm text-gray-500 mt-2">Klik untuk ganti foto</p>
+            {photoPreviews.length > 0 ? (
+              <div className="grid grid-cols-3 gap-2">
+                {photoPreviews.map((preview, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-20 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removePhoto(index); }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {photos.length < MAX_PHOTOS && (
+                  <div className="h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-2xl">
+                    +
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="text-gray-500">
+              <div className="text-gray-500 py-4">
                 <p className="mb-2">Klik atau drag & drop foto</p>
-                <p className="text-sm">JPG, PNG (max 10MB - akan dikompres)</p>
+                <p className="text-sm">JPG, PNG (max 10MB per foto)</p>
               </div>
             )}
           </div>
@@ -283,32 +322,42 @@ export default function BuatLaporanPage() {
             </button>
             <button
               type="button"
+              disabled={photos.length >= MAX_PHOTOS}
               onClick={() => {
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
                 input.capture = 'environment';
+                input.multiple = photos.length < MAX_PHOTOS - 1;
                 input.onchange = async (e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0];
-                  if (file) {
+                  const files = Array.from((e.target as HTMLInputElement).files || []);
+                  if (files.length + photos.length > MAX_PHOTOS) {
+                    setError(`Maksimal ${MAX_PHOTOS} foto`);
+                    return;
+                  }
+                  for (const file of files) {
                     if (file.size > 10 * 1024 * 1024) {
                       setError('Foto maksimal 10MB');
                       return;
                     }
                     try {
                       const compressed = await compressImage(file);
-                      setPhoto(compressed);
-                      setPhotoPreview(URL.createObjectURL(compressed));
+                      setPhotos(prev => [...prev, compressed]);
+                      setPhotoPreviews(prev => [...prev, URL.createObjectURL(compressed)]);
                       setError('');
                     } catch (err) {
-                      setPhoto(file);
-                      setPhotoPreview(URL.createObjectURL(file));
+                      setPhotos(prev => [...prev, file]);
+                      setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);
                     }
                   }
                 };
                 input.click();
               }}
-              className="flex-1 py-2 px-4 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg flex items-center justify-center gap-2"
+              className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 ${
+                photos.length >= MAX_PHOTOS
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+              }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -323,6 +372,7 @@ export default function BuatLaporanPage() {
             type="file"
             accept="image/*"
             capture="environment"
+            multiple
             onChange={handlePhotoChange}
             className="hidden"
           />
