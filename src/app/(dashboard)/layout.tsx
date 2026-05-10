@@ -46,6 +46,7 @@ export default function DashboardLayout({
   const navItems = [
     { href: '/dashboard', icon: '🏠', label: 'Dashboard', active: isActive('/dashboard') },
     { href: '/dashboard/buat-laporan', icon: '📝', label: 'Buat Laporan', active: isActive('/dashboard/buat-laporan') },
+    { href: '/dashboard/riwayat', icon: '📋', label: 'Riwayat', active: isActive('/dashboard/riwayat') },
   ];
 
   return (

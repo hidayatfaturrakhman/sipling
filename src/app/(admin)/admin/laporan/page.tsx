@@ -26,6 +26,8 @@ export default function AdminLaporanPage() {
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterDateStart, setFilterDateStart] = useState<string>('');
+  const [filterDateEnd, setFilterDateEnd] = useState<string>('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -34,10 +36,10 @@ export default function AdminLaporanPage() {
 
   useEffect(() => {
     // Reset to page 1 when filters change
-    if (filterCategory !== 'all' || filterStatus !== 'all' || search) {
+    if (filterCategory !== 'all' || filterStatus !== 'all' || search || filterDateStart || filterDateEnd) {
       setPage(1);
     }
-  }, [filterCategory, filterStatus, search]);
+  }, [filterCategory, filterStatus, search, filterDateStart, filterDateEnd]);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -57,6 +59,12 @@ export default function AdminLaporanPage() {
       if (search) {
         query = query.ilike('description', `%${search}%`);
       }
+      if (filterDateStart) {
+        query = query.gte('created_at', filterDateStart);
+      }
+      if (filterDateEnd) {
+        query = query.lte('created_at', filterDateEnd + 'T23:59:59');
+      }
 
       const { data, count } = await query;
       setReports(data || []);
@@ -65,7 +73,7 @@ export default function AdminLaporanPage() {
     };
 
     fetchReports();
-  }, [filterCategory, filterStatus, page, search, supabase]);
+  }, [filterCategory, filterStatus, page, search, filterDateStart, filterDateEnd, supabase]);
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -130,6 +138,23 @@ export default function AdminLaporanPage() {
             <option value="pending">Menunggu</option>
             <option value="resolved">Selesai</option>
           </select>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={filterDateStart}
+              onChange={(e) => setFilterDateStart(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              placeholder="Tgl Mulai"
+            />
+            <span className="text-gray-400">-</span>
+            <input
+              type="date"
+              value={filterDateEnd}
+              onChange={(e) => setFilterDateEnd(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              placeholder="Tgl Akhir"
+            />
+          </div>
         </div>
       </div>
 

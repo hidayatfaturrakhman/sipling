@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { compressImage, formatFileSize } from '@/lib/utils';
+import { useToast } from '@/components/Toast';
 
 interface Category {
   id: string;
@@ -28,6 +30,7 @@ export default function BuatLaporanPage() {
   const router = useRouter();
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     // Fetch active categories
@@ -80,28 +83,44 @@ export default function BuatLaporanPage() {
     }
   }, [location]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Foto maksimal 5MB');
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Foto maksimal 10MB');
         return;
       }
-      setPhoto(file);
-      setPhotoPreview(URL.createObjectURL(file));
+
+      try {
+        const compressed = await compressImage(file);
+        setPhoto(compressed);
+        setPhotoPreview(URL.createObjectURL(compressed));
+        setError('');
+      } catch (err) {
+        // Fallback to original if compression fails
+        setPhoto(file);
+        setPhotoPreview(URL.createObjectURL(file));
+      }
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Foto maksimal 5MB');
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Foto maksimal 10MB');
         return;
       }
-      setPhoto(file);
-      setPhotoPreview(URL.createObjectURL(file));
+
+      try {
+        const compressed = await compressImage(file);
+        setPhoto(compressed);
+        setPhotoPreview(URL.createObjectURL(compressed));
+      } catch (err) {
+        setPhoto(file);
+        setPhotoPreview(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -165,11 +184,13 @@ export default function BuatLaporanPage() {
       if (insertError) throw insertError;
 
       setSuccess(true);
+      showToast('Laporan berhasil dikirim!', 'success');
       setTimeout(() => {
         router.push('/dashboard');
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Gagal mengirim laporan');
+      showToast(err.message || 'Gagal mengirim laporan', 'error');
     } finally {
       setLoading(false);
     }
