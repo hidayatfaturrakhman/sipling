@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface Report {
   id: string;
@@ -25,6 +26,7 @@ export default function RiwayatPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const supabase = createClient();
 
   useEffect(() => {
@@ -51,14 +53,13 @@ export default function RiwayatPage() {
     setLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Hapus laporan ini?')) return;
-
-    // Soft delete - set deleted_at instead of actually deleting
-    const { error } = await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  const handleDelete = async () => {
+    if (!confirmDelete.id) return;
+    const { error } = await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', confirmDelete.id);
     if (!error) {
-      setReports(reports.filter(r => r.id !== id));
+      setReports(reports.filter(r => r.id !== confirmDelete.id));
     }
+    setConfirmDelete({ open: false, id: null });
   };
 
   const categoryLabels: Record<string, string> = {
@@ -207,9 +208,9 @@ export default function RiwayatPage() {
               </div>
 
               {report.status === 'pending' && (
-                <div className="mt-4 pt-4 border-t flex justify-end">
+                <div className="mt-4 pt-4 border-t dark:border-gray-700 flex justify-end">
                   <button
-                    onClick={() => handleDelete(report.id)}
+                    onClick={() => setConfirmDelete({ open: true, id: report.id })}
                     className="text-red-600 hover:text-red-800 text-sm"
                   >
                     Hapus Laporan
@@ -269,6 +270,17 @@ export default function RiwayatPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        title="Hapus Laporan"
+        message="Apakah Anda yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Hapus"
+        cancelText="Batal"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete({ open: false, id: null })}
+        danger
+      />
     </div>
   );
 }

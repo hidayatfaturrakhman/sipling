@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { compressImage } from '@/lib/utils';
 import { useToast } from '@/components/Toast';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface Report {
   id: string;
@@ -34,6 +35,7 @@ export default function AdminDashboardPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const supabase = createClient();
   const { showToast } = useToast();
 
@@ -128,13 +130,13 @@ export default function AdminDashboardPage() {
     window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Hapus laporan ini?')) return;
-    // Soft delete - set deleted_at instead of actually deleting
-    await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', id);
-    setReports(reports.filter(r => r.id !== id));
+  const handleDelete = async () => {
+    if (!confirmDelete.id) return;
+    await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', confirmDelete.id);
+    setReports(reports.filter(r => r.id !== confirmDelete.id));
     setStats(stats => ({ ...stats, total: stats.total - 1 }));
     setSelectedReport(null);
+    setConfirmDelete({ open: false, id: null });
   };
 
   const openLightbox = (images: string[], index: number) => {
@@ -380,7 +382,7 @@ export default function AdminDashboardPage() {
                       {resolving ? 'Menyimpan...' : 'Selesai'}
                     </button>
                     <button
-                      onClick={() => handleDelete(selectedReport.id)}
+                      onClick={() => setConfirmDelete({ open: true, id: selectedReport.id })}
                       className="bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg flex items-center justify-center"
                       title="Hapus"
                     >
@@ -393,7 +395,7 @@ export default function AdminDashboardPage() {
               )}
               {selectedReport.status === 'resolved' && (
                 <button
-                  onClick={() => handleDelete(selectedReport.id)}
+                  onClick={() => setConfirmDelete({ open: true, id: selectedReport.id })}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg flex items-center justify-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -455,6 +457,17 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        title="Hapus Laporan"
+        message="Apakah Anda yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Hapus"
+        cancelText="Batal"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete({ open: false, id: null })}
+        danger
+      />
     </div>
   );
 }
