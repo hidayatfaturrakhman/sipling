@@ -1,6 +1,7 @@
 // Image compression utility
+// Optimized for 1-2MB output with good quality
 
-export async function compressImage(file: File, maxWidth = 1200, quality = 0.8): Promise<File> {
+export async function compressImage(file: File, maxWidth = 1600, quality = 0.75): Promise<File> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
