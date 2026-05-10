@@ -69,14 +69,14 @@ export default function ActivityPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Log Aktivitas</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4">Log Aktivitas</h2>
 
       {/* Filter */}
-      <div className="bg-white rounded-xl shadow-sm mb-6 p-4">
+      <div className="bg-white rounded-xl shadow-sm mb-4 p-3">
         <select
           value={filterAction}
           onChange={(e) => setFilterAction(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
         >
           <option value="all">Semua Aktivitas</option>
           <option value="login">Login</option>
@@ -89,28 +89,65 @@ export default function ActivityPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <p className="text-gray-500 text-sm">Total Aktivitas</p>
-          <p className="text-2xl font-bold text-blue-600">{logs.length}</p>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="bg-white rounded-xl shadow-sm p-3 text-center">
+          <p className="text-gray-500 text-xs">Total</p>
+          <p className="text-xl font-bold text-blue-600">{logs.length}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <p className="text-gray-500 text-sm">Login</p>
-          <p className="text-2xl font-bold text-green-600">
+        <div className="bg-white rounded-xl shadow-sm p-3 text-center">
+          <p className="text-gray-500 text-xs">Login</p>
+          <p className="text-xl font-bold text-green-600">
             {logs.filter(l => l.action === 'login').length}
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <p className="text-gray-500 text-sm">Laporan Baru</p>
-          <p className="text-2xl font-bold text-purple-600">
+        <div className="bg-white rounded-xl shadow-sm p-3 text-center">
+          <p className="text-gray-500 text-xs">Laporan</p>
+          <p className="text-xl font-bold text-purple-600">
             {logs.filter(l => l.action === 'create_report').length}
           </p>
         </div>
       </div>
 
-      {/* Logs Table */}
+      {/* Logs - Mobile Card Layout */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Card */}
+        <div className="divide-y divide-gray-200 lg:hidden">
+          {logs.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              Tidak ada aktivitas
+            </div>
+          ) : (
+            logs.map((log) => (
+              <div key={log.id} className="p-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500">
+                    {new Date(log.created_at).toLocaleString('id-ID', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                    log.action === 'login' ? 'bg-green-100 text-green-800' :
+                    log.action === 'create_report' ? 'bg-blue-100 text-blue-800' :
+                    log.action === 'delete_report' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {actionLabels[log.action] || log.action}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-gray-800 truncate">
+                  {log.profiles?.full_name || log.profiles?.email || 'Unknown'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{log.details || '-'}</p>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>

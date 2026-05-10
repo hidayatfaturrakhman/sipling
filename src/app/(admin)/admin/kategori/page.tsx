@@ -107,54 +107,52 @@ export default function KategoriPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h2 className="text-2xl font-bold text-gray-800">Kelola Kategori</h2>
         <button
           onClick={openAddModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm"
         >
-          <span>+</span> Tambah Kategori
+          <span>+</span> Tambah
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {categories.map((category) => (
           <div
             key={category.id}
-            className={`bg-white rounded-xl shadow-sm p-6 border-2 ${
+            className={`bg-white rounded-xl shadow-sm p-4 border-2 ${
               category.is_active ? 'border-transparent' : 'border-gray-200 opacity-60'
             }`}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">{category.icon}</span>
-                <div>
-                  <h3 className="font-semibold text-gray-800">{category.name}</h3>
-                  <p className="text-sm text-gray-500">{category.description || '-'}</p>
-                </div>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-2xl">{category.icon}</span>
+              <div className="min-w-0">
+                <h3 className="font-semibold text-gray-800 text-sm truncate">{category.name}</h3>
+                <p className="text-xs text-gray-500 truncate">{category.description || '-'}</p>
               </div>
             </div>
 
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-1">
               <button
                 onClick={() => handleEdit(category)}
-                className="flex-1 text-blue-600 hover:bg-blue-50 py-2 px-3 rounded-lg text-sm border border-blue-200"
+                className="flex-1 text-blue-600 hover:bg-blue-50 py-1.5 px-2 rounded text-xs border border-blue-200"
               >
                 Edit
               </button>
               <button
                 onClick={() => handleToggleActive(category)}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm border ${
+                className={`flex-1 py-1.5 px-2 rounded text-xs border ${
                   category.is_active
                     ? 'text-orange-600 border-orange-200 hover:bg-orange-50'
                     : 'text-green-600 border-green-200 hover:bg-green-50'
                 }`}
               >
-                {category.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                {category.is_active ? 'Nonaktif' : 'Aktifkan'}
               </button>
               <button
                 onClick={() => handleDelete(category.id)}
-                className="flex-1 text-red-600 hover:bg-red-50 py-2 px-3 rounded-lg text-sm border border-red-200"
+                className="flex-1 text-red-600 hover:bg-red-50 py-1.5 px-2 rounded text-xs border border-red-200"
               >
                 Hapus
               </button>

@@ -92,46 +92,78 @@ export default function UsersPage() {
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Kelola User</h2>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm mb-6 p-4">
-        <div className="flex flex-wrap gap-4">
-          <input
-            type="text"
-            placeholder="Cari email, nama, atau NIK..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg"
-          />
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg"
-          >
-            <option value="all">Semua Role</option>
-            <option value="admin">Admin</option>
-            <option value="warga">Warga</option>
-          </select>
-        </div>
+      <div className="bg-white rounded-xl shadow-sm mb-4 p-3 space-y-3">
+        <input
+          type="text"
+          placeholder="Cari email, nama, atau NIK..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+        />
+        <select
+          value={filterRole}
+          onChange={(e) => setFilterRole(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+        >
+          <option value="all">Semua Role</option>
+          <option value="admin">Admin</option>
+          <option value="warga">Warga</option>
+        </select>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <p className="text-gray-500 text-sm">Total User</p>
-          <p className="text-2xl font-bold text-blue-600">{users.length}</p>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="bg-white rounded-xl shadow-sm p-3 text-center">
+          <p className="text-gray-500 text-xs">Total</p>
+          <p className="text-xl font-bold text-blue-600">{users.length}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <p className="text-gray-500 text-sm">Admin</p>
-          <p className="text-2xl font-bold text-purple-600">{users.filter(u => u.role === 'admin').length}</p>
+        <div className="bg-white rounded-xl shadow-sm p-3 text-center">
+          <p className="text-gray-500 text-xs">Admin</p>
+          <p className="text-xl font-bold text-purple-600">{users.filter(u => u.role === 'admin').length}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <p className="text-gray-500 text-sm">Warga</p>
-          <p className="text-2xl font-bold text-green-600">{users.filter(u => u.role === 'warga').length}</p>
+        <div className="bg-white rounded-xl shadow-sm p-3 text-center">
+          <p className="text-gray-500 text-xs">Warga</p>
+          <p className="text-xl font-bold text-green-600">{users.filter(u => u.role === 'warga').length}</p>
         </div>
       </div>
 
-      {/* User Table */}
+      {/* User Table - Mobile Card Layout */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Card */}
+        <div className="divide-y divide-gray-200 lg:hidden">
+          {filteredUsers.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              Tidak ada user
+            </div>
+          ) : (
+            filteredUsers.map((user) => (
+              <div
+                key={user.id}
+                className="p-4 hover:bg-gray-50 cursor-pointer"
+                onClick={() => setSelectedUser(user)}
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-800 text-sm">{user.full_name || '-'}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {user.role === 'admin' ? 'Admin' : 'Warga'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <span>NIK: {user.nik || '-'}</span>
+                    <span>{user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID') : '-'}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
@@ -152,7 +184,7 @@ export default function UsersPage() {
                 </tr>
               ) : (
                 filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedUser(user)}>
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-800">{user.full_name || '-'}</div>
                     </td>
@@ -160,13 +192,9 @@ export default function UsersPage() {
                     <td className="px-6 py-4 text-sm text-gray-600">{user.nik || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{user.phone || '-'}</td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          user.role === 'admin'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
+                      }`}>
                         {user.role === 'admin' ? 'Admin' : 'Warga'}
                       </span>
                     </td>

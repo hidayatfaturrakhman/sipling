@@ -115,17 +115,17 @@ export default function ExportPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Export Laporan</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4">Export Laporan</h2>
 
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <h3 className="font-semibold text-gray-800 mb-4">Pilih Periode</h3>
-        <div className="flex gap-4">
+      <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+        <h3 className="font-semibold text-gray-800 mb-3 text-sm">Pilih Periode</h3>
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Bulan</label>
+            <label className="block text-xs text-gray-600 mb-1">Bulan</label>
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
               {monthNames.map((name, index) => (
                 <option key={index} value={index + 1}>{name}</option>
@@ -133,11 +133,11 @@ export default function ExportPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Tahun</label>
+            <label className="block text-xs text-gray-600 mb-1">Tahun</label>
             <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
               {[2024, 2025, 2026, 2027].map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -147,64 +147,62 @@ export default function ExportPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-800 mb-4">Ringkasan</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Laporan</span>
-              <span className="font-semibold">{stats.total}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Menunggu</span>
-              <span className="font-semibold text-orange-600">{stats.pending}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Selesai</span>
-              <span className="font-semibold text-green-600">{stats.resolved}</span>
-            </div>
-          </div>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <p className="text-gray-500 text-xs mb-1">Total</p>
+          <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-800 mb-4">Berdasarkan Kategori</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Jalan Rusak</span>
-              <span className="font-semibold">{categoryStats.jalan_rusak}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Sampah</span>
-              <span className="font-semibold">{categoryStats.sampah}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Jalan Berlubang</span>
-              <span className="font-semibold">{categoryStats.jalan_berlubang}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Lainnya</span>
-              <span className="font-semibold">{categoryStats.lainnya}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-gray-800">
-            Laporan {monthNames[month - 1]} {year}
-          </h3>
+        <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col justify-between">
+          <p className="text-gray-500 text-xs mb-1">Selesai</p>
+          <p className="text-2xl font-bold text-green-600">{stats.resolved}</p>
           <button
             onClick={handleExport}
             disabled={reports.length === 0}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs disabled:opacity-50"
           >
-            Export ke Excel
+            Export Excel
           </button>
         </div>
+      </div>
 
+      {/* Mobile Card Layout */}
+      <div className="bg-white rounded-xl shadow-sm mb-4 lg:hidden">
         {reports.length === 0 ? (
-          <p className="text-center text-gray-500 py-8">Tidak ada laporan pada periode ini</p>
+          <p className="text-center text-gray-500 p-6">Tidak ada laporan</p>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {reports.map((report, index) => (
+              <div key={report.id} className="p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500">
+                    {new Date(report.created_at).toLocaleDateString('id-ID')}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                    report.status === 'pending' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                  }`}>
+                    {report.status === 'pending' ? 'Menunggu' : 'Selesai'}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-gray-800">
+                  {report.category === 'jalan_rusak' && 'Jalan Rusak'}
+                  {report.category === 'sampah' && 'Sampah'}
+                  {report.category === 'jalan_berlubang' && 'Jalan Berlubang'}
+                  {report.category === 'lainnya' && 'Lainnya'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{report.profiles?.full_name || report.profiles?.email || '-'}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden lg:block bg-white rounded-xl shadow-sm p-6 mb-4">
+        <h3 className="font-semibold text-gray-800 mb-4">
+          Laporan {monthNames[month - 1]} {year}
+        </h3>
+        {reports.length === 0 ? (
+          <p className="text-center text-gray-500 py-8">Tidak ada laporan</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -221,9 +219,7 @@ export default function ExportPage() {
                 {reports.map((report, index) => (
                   <tr key={report.id}>
                     <td className="px-4 py-2">{index + 1}</td>
-                    <td className="px-4 py-2">
-                      {new Date(report.created_at).toLocaleDateString('id-ID')}
-                    </td>
+                    <td className="px-4 py-2">{new Date(report.created_at).toLocaleDateString('id-ID')}</td>
                     <td className="px-4 py-2">
                       {report.category === 'jalan_rusak' && 'Jalan Rusak'}
                       {report.category === 'sampah' && 'Sampah'}
@@ -232,13 +228,9 @@ export default function ExportPage() {
                     </td>
                     <td className="px-4 py-2">{report.profiles?.full_name || report.profiles?.email || '-'}</td>
                     <td className="px-4 py-2">
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          report.status === 'pending'
-                            ? 'bg-orange-100 text-orange-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        report.status === 'pending' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                      }`}>
                         {report.status === 'pending' ? 'Menunggu' : 'Selesai'}
                       </span>
                     </td>
