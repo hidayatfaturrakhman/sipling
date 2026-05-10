@@ -96,6 +96,9 @@ CREATE POLICY "Admins can manage categories" ON categories FOR ALL USING (
 CREATE POLICY "Anyone can view all reports" ON reports FOR SELECT USING (true);
 CREATE POLICY "Warga can create reports" ON reports FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own reports" ON reports FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Admins can update any reports" ON reports FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 CREATE POLICY "Admins can delete reports" ON reports FOR DELETE USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
