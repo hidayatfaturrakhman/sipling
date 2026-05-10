@@ -214,8 +214,11 @@ export default function RegisterPage() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Pendaftaran Berhasil!</h2>
-          <p className="text-gray-600 mb-4">Silakan login dengan akun Anda.</p>
-          <p className="text-sm text-gray-500">Mengalihkan ke login...</p>
+          <p className="text-gray-600 mb-2">Silakan verifikasi email Anda terlebih dahulu.</p>
+          <p className="text-sm text-gray-500 mb-4">Kami telah mengirim link verifikasi ke email Anda.</p>
+          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+            Kembali ke Login
+          </Link>
         </div>
       </div>
     );
