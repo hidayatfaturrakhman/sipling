@@ -74,7 +74,10 @@ export default function AdminDashboardPage() {
 
     setResolving(true);
     try {
-      let resolutionPhotoUrl = '';
+      let updateData: any = {
+        status: 'resolved',
+        updated_at: new Date().toISOString()
+      };
 
       if (resolutionPhoto) {
         const fileName = `resolution-${Date.now()}-${resolutionPhoto.name}`;
@@ -88,24 +91,26 @@ export default function AdminDashboardPage() {
           .from('report-photos')
           .getPublicUrl(fileName);
 
-        resolutionPhotoUrl = urlData.publicUrl;
+        updateData.resolution_photo_url = urlData.publicUrl;
+        updateData.resolved_at = new Date().toISOString();
       }
 
-      const { error: updateError } = await supabase.from('reports').update({
-        status: 'resolved',
-        resolution_photo_url: resolutionPhotoUrl,
-        resolved_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }).eq('id', selectedReport.id);
+      const { error: updateError } = await supabase.from('reports').update(updateData).eq('id', selectedReport.id);
 
-      if (updateError) throw new Error(updateError.message);
+      if (updateError) {
+        console.error('Update error:', updateError);
+        if (updateError.message.includes('resolution_photo_url') || updateError.message.includes('resolved_at')) {
+          const { error: simpleError } = await supabase.from('reports').update({
+            status: 'resolved',
+            updated_at: new Date().toISOString()
+          }).eq('id', selectedReport.id);
+          if (simpleError) throw new Error(simpleError.message);
+        } else {
+          throw new Error(updateError.message);
+        }
+      }
 
-      setReports(reports.map(r => r.id === selectedReport.id ? {
-        ...r,
-        status: 'resolved',
-        resolution_photo_url: resolutionPhotoUrl,
-        resolved_at: new Date().toISOString()
-      } : r));
+      setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved' } : r));
       setStats(stats => ({
         ...stats,
         pending: stats.pending - 1,

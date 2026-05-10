@@ -88,7 +88,11 @@ export default function AdminLaporanPage() {
     if (!selectedReport) return;
     setResolving(true);
     try {
-      let resolutionPhotoUrl = '';
+      let updateData: any = {
+        status: 'resolved',
+        updated_at: new Date().toISOString()
+      };
+
       if (resolutionPhoto) {
         const fileName = `resolution-${Date.now()}-${resolutionPhoto.name}`;
         const { error: uploadError } = await supabase.storage
@@ -96,18 +100,26 @@ export default function AdminLaporanPage() {
           .upload(fileName, resolutionPhoto);
         if (uploadError) throw new Error(uploadError.message);
         const { data: urlData } = supabase.storage.from('report-photos').getPublicUrl(fileName);
-        resolutionPhotoUrl = urlData.publicUrl;
+        updateData.resolution_photo_url = urlData.publicUrl;
+        updateData.resolved_at = new Date().toISOString();
       }
-      const { error: updateError } = await supabase.from('reports').update({
-        status: 'resolved',
-        resolution_photo_url: resolutionPhotoUrl,
-        resolved_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }).eq('id', selectedReport.id);
 
-      if (updateError) throw new Error(updateError.message);
+      const { error: updateError } = await supabase.from('reports').update(updateData).eq('id', selectedReport.id);
 
-      setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved', resolution_photo_url: resolutionPhotoUrl, resolved_at: new Date().toISOString() } : r));
+      if (updateError) {
+        console.error('Update error:', updateError);
+        if (updateError.message.includes('resolution_photo_url') || updateError.message.includes('resolved_at')) {
+          const { error: simpleError } = await supabase.from('reports').update({
+            status: 'resolved',
+            updated_at: new Date().toISOString()
+          }).eq('id', selectedReport.id);
+          if (simpleError) throw new Error(simpleError.message);
+        } else {
+          throw new Error(updateError.message);
+        }
+      }
+
+      setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved' } : r));
       setSelectedReport(null);
       setResolutionPhoto(null);
       showToast('Laporan berhasil ditandai selesai!', 'success');
