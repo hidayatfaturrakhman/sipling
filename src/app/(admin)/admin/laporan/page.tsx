@@ -37,6 +37,9 @@ export default function AdminLaporanPage() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [resolving, setResolving] = useState(false);
   const [resolutionPhoto, setResolutionPhoto] = useState<File | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const itemsPerPage = 10;
   const supabase = createClient();
   const { showToast } = useToast();
@@ -138,6 +141,18 @@ export default function AdminLaporanPage() {
     await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', id);
     setReports(reports.filter(r => r.id !== id));
     setSelectedReport(null);
+  };
+
+  const openLightbox = (images: string[], index: number) => {
+    setLightboxImages(images);
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setLightboxIndex(0);
+    setLightboxImages([]);
   };
 
   const categoryLabels: Record<string, string> = {
@@ -367,15 +382,16 @@ export default function AdminLaporanPage() {
                   <p className="text-xs text-gray-500 mb-1">Foto Laporan ({selectedReport.photo_url.split(',').length})</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {selectedReport.photo_url.split(',').map((url: string, index: number) => (
-                      <div key={index} className="relative">
+                      <div key={index} className="relative group">
                         <img
                           src={url}
                           alt={`Foto ${index + 1}`}
-                          className="w-full h-24 sm:h-32 object-cover rounded-lg"
+                          className="w-full h-24 sm:h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition"
+                          onClick={() => openLightbox(selectedReport.photo_url.split(','), index)}
                         />
                         {index === 0 && (
                           <button
-                            onClick={() => openGoogleMaps(selectedReport)}
+                            onClick={(e) => { e.stopPropagation(); openGoogleMaps(selectedReport); }}
                             className="absolute bottom-1 right-1 bg-white rounded-full p-1 shadow-sm hover:bg-gray-100"
                             title="Buka di Google Maps"
                           >
@@ -504,6 +520,55 @@ export default function AdminLaporanPage() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-[99999] p-2 sm:p-4"
+          onClick={closeLightbox}
+        >
+          <button
+            onClick={closeLightbox}
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white hover:text-gray-300 p-2"
+          >
+            <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {lightboxImages.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length); }}
+                className="absolute left-2 sm:left-4 text-white hover:text-gray-300 p-2"
+              >
+                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % lightboxImages.length); }}
+                className="absolute right-2 sm:right-4 text-white hover:text-gray-300 p-2"
+              >
+                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
+
+          <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={lightboxImages[lightboxIndex]}
+              alt={`Foto ${lightboxIndex + 1}`}
+              className="max-w-full max-h-[85vh] sm:max-h-[90vh] object-contain rounded"
+            />
+            <p className="text-white text-center mt-2 text-sm">
+              {lightboxIndex + 1} / {lightboxImages.length}
+            </p>
           </div>
         </div>
       )}
