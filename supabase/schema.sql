@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS reports (
   longitude FLOAT NOT NULL,
   address TEXT,
   status TEXT NOT NULL CHECK (status IN ('pending', 'resolved')) DEFAULT 'pending',
+  resolution_photo_url TEXT,
+  resolved_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

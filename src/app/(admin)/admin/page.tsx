@@ -1,7 +1,8 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { compressImage } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 
 const MapContainer = dynamic(
@@ -30,6 +31,8 @@ interface Report {
   longitude: number;
   address: string;
   status: string;
+  resolution_photo_url: string;
+  resolved_at: string;
   created_at: string;
   profiles?: {
     full_name: string;
@@ -44,6 +47,8 @@ export default function AdminDashboardPage() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [mapReady, setMapReady] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const [resolutionPhoto, setResolutionPhoto] = useState<File | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -85,15 +90,69 @@ export default function AdminDashboardPage() {
     fetchReports();
   }, [filterCategory, supabase]);
 
-  const handleUpdateStatus = async (id: string, status: string) => {
-    await supabase.from('reports').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
-    setReports(reports.map(r => r.id === id ? { ...r, status } : r));
-    setStats(stats => ({
-      ...stats,
-      pending: status === 'pending' ? stats.pending + 1 : stats.pending - 1,
-      resolved: status === 'resolved' ? stats.resolved + 1 : stats.resolved - 1,
-    }));
-    setSelectedReport(null);
+  const handleResolve = async () => {
+    if (!selectedReport) return;
+
+    setResolving(true);
+    try {
+      let resolutionPhotoUrl = '';
+
+      if (resolutionPhoto) {
+        const fileName = `resolution-${Date.now()}-${resolutionPhoto.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('report-photos')
+          .upload(fileName, resolutionPhoto);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('report-photos')
+          .getPublicUrl(fileName);
+
+        resolutionPhotoUrl = urlData.publicUrl;
+      }
+
+      await supabase.from('reports').update({
+        status: 'resolved',
+        resolution_photo_url: resolutionPhotoUrl,
+        resolved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq('id', selectedReport.id);
+
+      setReports(reports.map(r => r.id === selectedReport.id ? {
+        ...r,
+        status: 'resolved',
+        resolution_photo_url: resolutionPhotoUrl,
+        resolved_at: new Date().toISOString()
+      } : r));
+      setStats(stats => ({
+        ...stats,
+        pending: stats.pending - 1,
+        resolved: stats.resolved + 1,
+      }));
+      setSelectedReport(null);
+      setResolutionPhoto(null);
+    } catch (err) {
+      console.error('Error resolving report:', err);
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const handleResolutionPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Foto maksimal 10MB');
+        return;
+      }
+      try {
+        const compressed = await compressImage(file);
+        setResolutionPhoto(compressed);
+      } catch (err) {
+        setResolutionPhoto(file);
+      }
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -256,11 +315,30 @@ export default function AdminDashboardPage() {
             </div>
 
             {selectedReport.photo_url && (
-              <img
-                src={selectedReport.photo_url}
-                alt="Foto"
-                className="w-full h-48 object-cover rounded-lg mb-4"
-              />
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 mb-1">Foto Laporan</p>
+                <img
+                  src={selectedReport.photo_url}
+                  alt="Foto Laporan"
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              </div>
+            )}
+
+            {selectedReport.resolution_photo_url && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 mb-1">Foto Bukti Perbaikan</p>
+                <img
+                  src={selectedReport.resolution_photo_url}
+                  alt="Foto Bukti"
+                  className="w-full h-48 object-cover rounded-lg border-2 border-green-500"
+                />
+                {selectedReport.resolved_at && (
+                  <p className="text-xs text-green-600 mt-1">
+                    Diselesaikan: {new Date(selectedReport.resolved_at).toLocaleDateString('id-ID')}
+                  </p>
+                )}
+              </div>
             )}
 
             <div className="space-y-3">
@@ -302,12 +380,31 @@ export default function AdminDashboardPage() {
 
             <div className="flex gap-3 mt-6">
               {selectedReport.status === 'pending' && (
-                <button
-                  onClick={() => handleUpdateStatus(selectedReport.id, 'resolved')}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg"
-                >
-                  Tandai Selesai
-                </button>
+                <>
+                  {/* Upload Foto Bukti */}
+                  <div className="mb-4">
+                    <label className="block text-sm text-gray-600 mb-2">
+                      Upload Foto Bukti Perbaikan (Opsional)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleResolutionPhotoChange}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    {resolutionPhoto && (
+                      <p className="text-xs text-green-600 mt-1">✓ Foto dipilih: {resolutionPhoto.name}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleResolve}
+                    disabled={resolving}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg disabled:opacity-50"
+                  >
+                    {resolving ? 'Menyimpan...' : 'Tandai Selesai'}
+                  </button>
+                </>
               )}
               <button
                 onClick={() => handleDelete(selectedReport.id)}
