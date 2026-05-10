@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { logActivity } from '@/lib/activityLog';
 
 export default function LoginPage() {
-  console.log('LoginPage rendered');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,7 +16,6 @@ export default function LoginPage() {
   const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
-    console.log('handleLogin called');
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -34,21 +32,13 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      console.log('User logged in, userId:', data.user.id);
-
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single();
 
-      console.log('Profile:', profile);
-
-      try {
-        await logActivity('login', `Login sebagai ${profile?.role === 'admin' ? 'Admin' : 'Warga'}`, data.user.id);
-      } catch (err) {
-        console.error('Login log error:', err);
-      }
+      await logActivity('login', `Login sebagai ${profile?.role === 'admin' ? 'Admin' : 'Warga'}`, data.user.id);
 
       if (profile?.role === 'admin') {
         router.push('/admin');
@@ -64,6 +54,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-8">
+          <img src="/favicon.svg" alt="Logo" className="w-20 h-20 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-gray-800">SIPLING</h1>
           <p className="text-gray-500 mt-2">Sistem Pelaporan Lingkungan</p>
         </div>
