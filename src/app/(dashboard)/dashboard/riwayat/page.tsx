@@ -5,6 +5,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { Lightbox } from '@/components/Lightbox';
+import { logActivity } from '@/lib/activityLog';
+import { logReportHistory } from '@/lib/reportHistory';
 
 interface Report {
   id: string;
@@ -24,9 +27,7 @@ export default function RiwayatPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
-  const [lightboxZoom, setLightboxZoom] = useState(1);
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const supabase = createClient();
 
@@ -56,9 +57,14 @@ export default function RiwayatPage() {
 
   const handleDelete = async () => {
     if (!confirmDelete.id) return;
+    const deletedReport = reports.find(r => r.id === confirmDelete.id);
     const { error } = await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', confirmDelete.id);
     if (!error) {
       setReports(reports.filter(r => r.id !== confirmDelete.id));
+      if (deletedReport) {
+        await logActivity('delete_report', `Menghapus laporan: ${deletedReport.category}`);
+        await logReportHistory(confirmDelete.id, 'deleted', `Laporan "${deletedReport.category}" dihapus oleh warga`);
+      }
     }
     setConfirmDelete({ open: false, id: null });
   };
@@ -82,67 +88,15 @@ export default function RiwayatPage() {
     lainnya: 'bg-gray-100 text-gray-800',
   };
 
-  const openLightbox = (images: string[], index: number) => {
+  const openLightbox = (images: string[]) => {
     setLightboxImages(images);
-    setLightboxIndex(index);
     setLightboxOpen(true);
   };
 
   const closeLightbox = () => {
     setLightboxOpen(false);
-    setLightboxIndex(0);
     setLightboxImages([]);
-    setLightboxZoom(1);
-    setDragPosition({ x: 0, y: 0 });
   };
-
-  const handleZoomIn = () => {
-    setLightboxZoom(prev => Math.min(prev + 0.5, 4));
-    setDragPosition({ x: 0, y: 0 });
-  };
-  const handleZoomOut = () => setLightboxZoom(prev => Math.max(prev - 0.5, 0.5));
-  const handleZoomReset = () => {
-    setLightboxZoom(1);
-    setDragPosition({ x: 0, y: 0 });
-  };
-  const handleWheelZoom = (e: React.WheelEvent) => {
-    if (e.deltaY < 0) handleZoomIn();
-    else handleZoomOut();
-  };
-
-  // Drag functionality with boundary constraints
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (lightboxZoom > 1) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - dragPosition.x, y: e.clientY - dragPosition.y });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && lightboxZoom > 1) {
-      const container = e.currentTarget;
-      const containerRect = container.getBoundingClientRect();
-      const scaledWidth = containerRect.width * lightboxZoom;
-      const scaledHeight = containerRect.height * lightboxZoom;
-
-      const maxX = Math.max(0, (scaledWidth - containerRect.width) / 2);
-      const maxY = Math.max(0, (scaledHeight - containerRect.height) / 2);
-
-      let newX = e.clientX - dragStart.x;
-      let newY = e.clientY - dragStart.y;
-
-      newX = Math.max(-maxX, Math.min(maxX, newX));
-      newY = Math.max(-maxY, Math.min(maxY, newY));
-
-      setDragPosition({ x: newX, y: newY });
-    }
-  };
-
-  const handleMouseUp = () => setIsDragging(false);
 
   if (loading) {
     return (
@@ -215,7 +169,7 @@ export default function RiwayatPage() {
                     src={report.photo_url.split(',')[0]}
                     alt="Foto"
                     className="w-full md:w-32 h-32 object-cover rounded-lg cursor-pointer hover:opacity-90"
-                    onClick={() => openLightbox(report.photo_url.split(','), 0)}
+                    onClick={() => openLightbox(report.photo_url.split(','))}
                   />
                 )}
                 <div className="flex-1">
@@ -273,44 +227,11 @@ export default function RiwayatPage() {
         )}
       </div>
 
-      {/* Lightbox */}
-      {lightboxOpen && (
-        <div
-          className="fixed inset-0 bg-black/90 flex items-center justify-center z-[99999] p-2 sm:p-4"
-          onClick={closeLightbox}
-        >
-          {/* Zoom Controls */}
-          <div className="absolute top-2 left-2 sm:top-4 sm:left-4 flex gap-1 z-10" onClick={(e) => e.stopPropagation()}>
-            <button onClick={handleZoomOut} className="text-white hover:text-gray-300 p-2 bg-black/50 rounded" title="Zoom Out">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" /></svg>
-            </button>
-            <button onClick={handleZoomReset} className="text-white hover:text-gray-300 px-3 py-2 bg-black/50 rounded text-sm" title="Reset Zoom">{Math.round(lightboxZoom * 100)}%</button>
-            <button onClick={handleZoomIn} className="text-white hover:text-gray-300 p-2 bg-black/50 rounded" title="Zoom In">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" /></svg>
-            </button>
-          </div>
-
-          <button onClick={closeLightbox} className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white hover:text-gray-300 p-2">
-            <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-
-          {lightboxImages.length > 1 && (
-            <>
-              <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length); }} className="absolute left-2 sm:left-4 text-white hover:text-gray-300 p-2">
-                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % lightboxImages.length); }} className="absolute right-2 sm:right-4 text-white hover:text-gray-300 p-2">
-                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </>
-          )}
-
-          <div className={`max-w-full max-h-full overflow-hidden ${lightboxZoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`} onClick={(e) => e.stopPropagation()} onWheel={handleWheelZoom} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-            <img src={lightboxImages[lightboxIndex]} alt={`Foto ${lightboxIndex + 1}`} className="object-contain transition-transform duration-200" style={{ maxWidth: '100%', maxHeight: '85vh', transform: `scale(${lightboxZoom}) translate(${dragPosition.x}px, ${dragPosition.y}px)`, transformOrigin: 'center center', cursor: lightboxZoom > 1 ? 'grab' : 'zoom-in' }} draggable={false} />
-            <p className="text-white text-center mt-2 text-sm">{lightboxIndex + 1} / {lightboxImages.length}</p>
-          </div>
-        </div>
-      )}
+      <Lightbox
+          images={lightboxImages}
+          isOpen={lightboxOpen}
+          onClose={closeLightbox}
+        />
 
       <ConfirmDialog
         open={confirmDelete.open}

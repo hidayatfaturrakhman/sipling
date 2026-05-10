@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { compressImage, formatFileSize } from '@/lib/utils';
 import { useToast } from '@/components/Toast';
+import { logActivity } from '@/lib/activityLog';
+import { logReportHistory } from '@/lib/reportHistory';
 
 interface Category {
   id: string;
@@ -189,7 +191,7 @@ export default function BuatLaporanPage() {
       const selectedCategory = categories.find(c => c.id === category);
 
       // Insert report
-      const { error: insertError } = await supabase.from('reports').insert({
+      const { data: insertData, error: insertError } = await supabase.from('reports').insert({
         user_id: user.id,
         category_id: category,
         category: selectedCategory?.name,
@@ -199,9 +201,12 @@ export default function BuatLaporanPage() {
         longitude: location.lng,
         address,
         status: 'pending',
-      });
+      }).select().single();
 
       if (insertError) throw insertError;
+
+      await logActivity('create_report', `Membuat laporan: ${selectedCategory?.name}`, user.id);
+      await logReportHistory(insertData.id, 'created', `Laporan "${selectedCategory?.name}" berhasil dibuat`);
 
       setSuccess(true);
       showToast('Laporan berhasil dikirim!', 'success');

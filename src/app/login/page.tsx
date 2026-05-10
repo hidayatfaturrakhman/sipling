@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { logActivity } from '@/lib/activityLog';
 
 export default function LoginPage() {
+  console.log('LoginPage rendered');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,6 +17,7 @@ export default function LoginPage() {
   const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
+    console.log('handleLogin called');
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -31,11 +34,21 @@ export default function LoginPage() {
     }
 
     if (data.user) {
+      console.log('User logged in, userId:', data.user.id);
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single();
+
+      console.log('Profile:', profile);
+
+      try {
+        await logActivity('login', `Login sebagai ${profile?.role === 'admin' ? 'Admin' : 'Warga'}`, data.user.id);
+      } catch (err) {
+        console.error('Login log error:', err);
+      }
 
       if (profile?.role === 'admin') {
         router.push('/admin');
