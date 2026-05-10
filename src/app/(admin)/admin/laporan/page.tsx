@@ -41,6 +41,7 @@ export default function AdminLaporanPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxZoom, setLightboxZoom] = useState(1);
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const itemsPerPage = 10;
   const supabase = createClient();
@@ -155,6 +156,15 @@ export default function AdminLaporanPage() {
     setLightboxOpen(false);
     setLightboxIndex(0);
     setLightboxImages([]);
+    setLightboxZoom(1);
+  };
+
+  const handleZoomIn = () => setLightboxZoom(prev => Math.min(prev + 0.5, 4));
+  const handleZoomOut = () => setLightboxZoom(prev => Math.max(prev - 0.5, 0.5));
+  const handleZoomReset = () => setLightboxZoom(1);
+  const handleWheelZoom = (e: React.WheelEvent) => {
+    if (e.deltaY < 0) handleZoomIn();
+    else handleZoomOut();
   };
 
   const categoryLabels: Record<string, string> = {
@@ -532,45 +542,35 @@ export default function AdminLaporanPage() {
           className="fixed inset-0 bg-black/90 flex items-center justify-center z-[99999] p-2 sm:p-4"
           onClick={closeLightbox}
         >
-          <button
-            onClick={closeLightbox}
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white hover:text-gray-300 p-2"
-          >
-            <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          {/* Zoom Controls */}
+          <div className="absolute top-2 left-2 sm:top-4 sm:left-4 flex gap-1 z-10" onClick={(e) => e.stopPropagation()}>
+            <button onClick={handleZoomOut} className="text-white hover:text-gray-300 p-2 bg-black/50 rounded" title="Zoom Out">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" /></svg>
+            </button>
+            <button onClick={handleZoomReset} className="text-white hover:text-gray-300 px-3 py-2 bg-black/50 rounded text-sm" title="Reset Zoom">{Math.round(lightboxZoom * 100)}%</button>
+            <button onClick={handleZoomIn} className="text-white hover:text-gray-300 p-2 bg-black/50 rounded" title="Zoom In">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" /></svg>
+            </button>
+          </div>
+
+          <button onClick={closeLightbox} className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white hover:text-gray-300 p-2">
+            <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
 
           {lightboxImages.length > 1 && (
             <>
-              <button
-                onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length); }}
-                className="absolute left-2 sm:left-4 text-white hover:text-gray-300 p-2"
-              >
-                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+              <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length); }} className="absolute left-2 sm:left-4 text-white hover:text-gray-300 p-2">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
               </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % lightboxImages.length); }}
-                className="absolute right-2 sm:right-4 text-white hover:text-gray-300 p-2"
-              >
-                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % lightboxImages.length); }} className="absolute right-2 sm:right-4 text-white hover:text-gray-300 p-2">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
             </>
           )}
 
-          <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={lightboxImages[lightboxIndex]}
-              alt={`Foto ${lightboxIndex + 1}`}
-              className="max-w-full max-h-[85vh] sm:max-h-[90vh] object-contain rounded"
-            />
-            <p className="text-white text-center mt-2 text-sm">
-              {lightboxIndex + 1} / {lightboxImages.length}
-            </p>
+          <div className="max-w-full max-h-full overflow-auto" onClick={(e) => e.stopPropagation()} onWheel={handleWheelZoom}>
+            <img src={lightboxImages[lightboxIndex]} alt={`Foto ${lightboxIndex + 1}`} className="object-contain transition-transform duration-200" style={{ maxWidth: '100%', maxHeight: '85vh', transform: `scale(${lightboxZoom})`, transformOrigin: 'center center' }} draggable={false} />
+            <p className="text-white text-center mt-2 text-sm">{lightboxIndex + 1} / {lightboxImages.length}</p>
           </div>
         </div>
       )}
