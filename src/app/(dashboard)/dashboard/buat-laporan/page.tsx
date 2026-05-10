@@ -264,7 +264,7 @@ export default function BuatLaporanPage() {
             ) : (
               <div className="text-gray-500">
                 <p className="mb-2">Klik atau drag & drop foto</p>
-                <p className="text-sm">JPG, PNG (max 5MB)</p>
+                <p className="text-sm">JPG, PNG (max 10MB - akan dikompres)</p>
               </div>
             )}
           </div>
@@ -288,15 +288,22 @@ export default function BuatLaporanPage() {
                 input.type = 'file';
                 input.accept = 'image/*';
                 input.capture = 'environment';
-                input.onchange = (e) => {
+                input.onchange = async (e) => {
                   const file = (e.target as HTMLInputElement).files?.[0];
                   if (file) {
-                    if (file.size > 5 * 1024 * 1024) {
-                      setError('Foto maksimal 5MB');
+                    if (file.size > 10 * 1024 * 1024) {
+                      setError('Foto maksimal 10MB');
                       return;
                     }
-                    setPhoto(file);
-                    setPhotoPreview(URL.createObjectURL(file));
+                    try {
+                      const compressed = await compressImage(file);
+                      setPhoto(compressed);
+                      setPhotoPreview(URL.createObjectURL(compressed));
+                      setError('');
+                    } catch (err) {
+                      setPhoto(file);
+                      setPhotoPreview(URL.createObjectURL(file));
+                    }
                   }
                 };
                 input.click();
