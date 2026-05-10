@@ -303,69 +303,79 @@ export default function AdminDashboardPage() {
       {/* Detail Modal */}
       {selectedReport && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-semibold">Detail Laporan</h3>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b shrink-0">
+              <h3 className="text-lg font-semibold">Detail Laporan</h3>
               <button
-                onClick={() => setSelectedReport(null)}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={() => { setSelectedReport(null); setResolutionPhoto(null); }}
+                className="text-gray-400 hover:text-gray-600 p-1"
               >
-                ✕
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
-            {selectedReport.photo_url && (
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-1">Foto Laporan</p>
-                <img
-                  src={selectedReport.photo_url}
-                  alt="Foto Laporan"
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-              </div>
-            )}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {selectedReport.photo_url && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Foto Laporan</p>
+                  <img
+                    src={selectedReport.photo_url}
+                    alt="Foto Laporan"
+                    className="w-full h-40 object-cover rounded-lg"
+                  />
+                </div>
+              )}
 
-            {selectedReport.resolution_photo_url && (
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-1">Foto Bukti Perbaikan</p>
-                <img
-                  src={selectedReport.resolution_photo_url}
-                  alt="Foto Bukti"
-                  className="w-full h-48 object-cover rounded-lg border-2 border-green-500"
-                />
-                {selectedReport.resolved_at && (
-                  <p className="text-xs text-green-600 mt-1">
-                    Diselesaikan: {new Date(selectedReport.resolved_at).toLocaleDateString('id-ID')}
-                  </p>
-                )}
-              </div>
-            )}
+              {selectedReport.resolution_photo_url && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Foto Bukti Perbaikan</p>
+                  <img
+                    src={selectedReport.resolution_photo_url}
+                    alt="Foto Bukti"
+                    className="w-full h-40 object-cover rounded-lg border-2 border-green-500"
+                  />
+                  {selectedReport.resolved_at && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Diselesaikan: {new Date(selectedReport.resolved_at).toLocaleDateString('id-ID')}
+                    </p>
+                  )}
+                </div>
+              )}
 
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-gray-500">Kategori</p>
-                <p className="font-medium">{categoryLabels[selectedReport.category]}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500">Kategori</p>
+                  <p className="font-medium">{categoryLabels[selectedReport.category]}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Status</p>
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                    selectedReport.status === 'pending' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                  }`}>
+                    {selectedReport.status === 'pending' ? 'Menunggu' : 'Selesai'}
+                  </span>
+                </div>
               </div>
+
               <div>
-                <p className="text-sm text-gray-500">Status</p>
-                <p className={`font-medium ${selectedReport.status === 'pending' ? 'text-orange-600' : 'text-green-600'}`}>
-                  {selectedReport.status === 'pending' ? 'Menunggu' : 'Selesai'}
-                </p>
+                <p className="text-xs text-gray-500">Deskripsi</p>
+                <p className="text-sm text-gray-700">{selectedReport.description || 'Tidak ada'}</p>
               </div>
+
               <div>
-                <p className="text-sm text-gray-500">Deskripsi</p>
-                <p className="text-gray-700">{selectedReport.description || 'Tidak ada'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Lokasi</p>
+                <p className="text-xs text-gray-500">Lokasi</p>
                 <p className="text-sm">{selectedReport.address || `${selectedReport.latitude}, ${selectedReport.longitude}`}</p>
               </div>
+
               <div>
-                <p className="text-sm text-gray-500">Pelapor</p>
+                <p className="text-xs text-gray-500">Pelapor</p>
                 <p className="text-sm">{selectedReport.profiles?.full_name || selectedReport.profiles?.email || 'Unknown'}</p>
               </div>
+
               <div>
-                <p className="text-sm text-gray-500">Tanggal</p>
+                <p className="text-xs text-gray-500">Tanggal</p>
                 <p className="text-sm">
                   {new Date(selectedReport.created_at).toLocaleDateString('id-ID', {
                     day: 'numeric',
@@ -378,40 +388,58 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="p-4 border-t shrink-0">
               {selectedReport.status === 'pending' && (
                 <>
-                  {/* Upload Foto Bukti */}
-                  <div className="mb-4">
-                    <label className="block text-sm text-gray-600 mb-2">
-                      Upload Foto Bukti Perbaikan (Opsional)
+                  <div className="mb-3">
+                    <label className="block text-xs text-gray-600 mb-2">
+                      Upload Foto Bukti (Opsional)
                     </label>
                     <input
                       type="file"
                       accept="image/*"
                       capture="environment"
                       onChange={handleResolutionPhotoChange}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      className="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
                     {resolutionPhoto && (
-                      <p className="text-xs text-green-600 mt-1">✓ Foto dipilih: {resolutionPhoto.name}</p>
+                      <p className="text-xs text-green-600 mt-1">✓ {resolutionPhoto.name}</p>
                     )}
                   </div>
-                  <button
-                    onClick={handleResolve}
-                    disabled={resolving}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg disabled:opacity-50"
-                  >
-                    {resolving ? 'Menyimpan...' : 'Tandai Selesai'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleResolve}
+                      disabled={resolving}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {resolving ? 'Menyimpan...' : 'Selesai'}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(selectedReport.id)}
+                      className="bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg flex items-center justify-center"
+                      title="Hapus"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </>
               )}
-              <button
-                onClick={() => handleDelete(selectedReport.id)}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg"
-              >
-                Hapus
-              </button>
+              {selectedReport.status === 'resolved' && (
+                <button
+                  onClick={() => handleDelete(selectedReport.id)}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Hapus
+                </button>
+              )}
             </div>
           </div>
         </div>
