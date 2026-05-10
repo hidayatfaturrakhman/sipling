@@ -166,19 +166,19 @@ export default function AdminLaporanPage() {
     <div>
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Semua Laporan</h2>
 
-      <div className="bg-white rounded-xl shadow-sm mb-6 p-4">
-        <div className="flex flex-wrap gap-4">
-          <input
-            type="text"
-            placeholder="Cari laporan..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg"
-          />
+      <div className="bg-white rounded-xl shadow-sm mb-4 p-3 space-y-3">
+        <input
+          type="text"
+          placeholder="Cari laporan..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+        />
+        <div className="grid grid-cols-2 gap-2">
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
           >
             <option value="all">Semua Kategori</option>
             <option value="jalan_rusak">Jalan Rusak</option>
@@ -189,34 +189,79 @@ export default function AdminLaporanPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
           >
             <option value="all">Semua Status</option>
             <option value="pending">Menunggu</option>
             <option value="resolved">Selesai</option>
           </select>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={filterDateStart}
-              onChange={(e) => setFilterDateStart(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              placeholder="Tgl Mulai"
-            />
-            <span className="text-gray-400">-</span>
-            <input
-              type="date"
-              value={filterDateEnd}
-              onChange={(e) => setFilterDateEnd(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              placeholder="Tgl Akhir"
-            />
-          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={filterDateStart}
+            onChange={(e) => setFilterDateStart(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+          <span className="text-gray-400">-</span>
+          <input
+            type="date"
+            value={filterDateEnd}
+            onChange={(e) => setFilterDateEnd(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Card Layout */}
+        <div className="divide-y divide-gray-200 lg:hidden">
+          {reports.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              Tidak ada laporan
+            </div>
+          ) : (
+            reports.map((report: Report) => (
+              <div
+                key={report.id}
+                className="p-4 hover:bg-gray-50 cursor-pointer"
+                onClick={() => setSelectedReport(report)}
+              >
+                <div className="flex gap-3">
+                  {report.photo_url && (
+                    <img
+                      src={report.photo_url}
+                      alt="Foto"
+                      className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                        {categoryLabels[report.category]}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        report.status === 'pending' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {report.status === 'pending' ? 'Menunggu' : 'Selesai'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 truncate mb-1">
+                      {report.description || 'Tidak ada deskripsi'}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{report.profiles?.full_name || report.profiles?.email || '-'}</span>
+                      <span>{new Date(report.created_at).toLocaleDateString('id-ID')}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table Layout */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
@@ -289,7 +334,7 @@ export default function AdminLaporanPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className="px-6 py-4 flex justify-center gap-2">
+          <div className="px-4 py-4 flex justify-center gap-2">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <button
                 key={p}
