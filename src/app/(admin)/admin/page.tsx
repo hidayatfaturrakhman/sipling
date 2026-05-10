@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 const MapContainer = dynamic(
@@ -243,7 +243,7 @@ export default function AdminDashboardPage() {
 
       {/* Detail Modal */}
       {selectedReport && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]">
           <div className="bg-white rounded-xl max-w-lg w-full p-6">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-xl font-semibold">Detail Laporan</h3>
