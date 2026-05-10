@@ -87,7 +87,27 @@ export default function AdminLaporanPage() {
   const handleResolve = async () => {
     if (!selectedReport) return;
     setResolving(true);
+
+    console.log('Attempting to resolve report:', selectedReport.id);
+    console.log('Report current status:', selectedReport.status);
+
     try {
+      // First check if we can read the report
+      const { data: checkData, error: checkError } = await supabase
+        .from('reports')
+        .select('id, status')
+        .eq('id', selectedReport.id)
+        .single();
+
+      console.log('Current report data:', checkData);
+      console.log('Check error:', checkError);
+
+      if (checkError) {
+        console.error('Cannot read report:', checkError);
+        throw new Error('Tidak dapat membaca laporan: ' + checkError.message);
+      }
+
+      // Now try to update
       const { error: updateError } = await supabase
         .from('reports')
         .update({
@@ -96,17 +116,28 @@ export default function AdminLaporanPage() {
         })
         .eq('id', selectedReport.id);
 
+      console.log('Update error:', updateError);
+
       if (updateError) {
-        console.error('Supabase error:', updateError);
-        throw new Error(updateError.message);
+        console.error('Supabase update error:', updateError);
+        throw new Error('Gagal update: ' + updateError.message);
       }
+
+      // Verify the update
+      const { data: verifyData } = await supabase
+        .from('reports')
+        .select('status')
+        .eq('id', selectedReport.id)
+        .single();
+
+      console.log('Verified status after update:', verifyData);
 
       setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved' } : r));
       setSelectedReport(null);
       setResolutionPhoto(null);
       showToast('Laporan berhasil ditandai selesai!', 'success');
     } catch (err: any) {
-      console.error('Error:', err);
+      console.error('Error resolving report:', err);
       showToast(err.message || 'Gagal menyelesaikan laporan', 'error');
     } finally {
       setResolving(false);

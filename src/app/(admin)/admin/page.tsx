@@ -73,8 +73,21 @@ export default function AdminDashboardPage() {
     if (!selectedReport) return;
 
     setResolving(true);
+    console.log('Resolving report ID:', selectedReport.id);
+
     try {
-      // Simple update - just status field
+      // First verify we can access the report
+      const { data: beforeData, error: beforeError } = await supabase
+        .from('reports')
+        .select('id, status')
+        .eq('id', selectedReport.id)
+        .single();
+
+      console.log('Before update:', beforeData, 'Error:', beforeError);
+
+      if (beforeError) throw new Error(beforeError.message);
+
+      // Now update
       const { error: updateError } = await supabase
         .from('reports')
         .update({
@@ -84,9 +97,18 @@ export default function AdminDashboardPage() {
         .eq('id', selectedReport.id);
 
       if (updateError) {
-        console.error('Supabase error:', updateError);
+        console.error('Update error:', updateError);
         throw new Error(updateError.message);
       }
+
+      // Verify
+      const { data: afterData } = await supabase
+        .from('reports')
+        .select('status')
+        .eq('id', selectedReport.id)
+        .single();
+
+      console.log('After update:', afterData);
 
       setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved' } : r));
       setStats(stats => ({
