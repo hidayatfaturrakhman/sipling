@@ -151,15 +151,44 @@ export default function AdminDashboardPage() {
     setLightboxIndex(0);
     setLightboxImages([]);
     setLightboxZoom(1);
+    setDragPosition({ x: 0, y: 0 });
   };
 
-  const handleZoomIn = () => setLightboxZoom(prev => Math.min(prev + 0.5, 4));
+  const handleZoomIn = () => {
+    setLightboxZoom(prev => Math.min(prev + 0.5, 4));
+    setDragPosition({ x: 0, y: 0 });
+  };
   const handleZoomOut = () => setLightboxZoom(prev => Math.max(prev - 0.5, 0.5));
   const handleZoomReset = () => setLightboxZoom(1);
 
   const handleWheelZoom = (e: React.WheelEvent) => {
     if (e.deltaY < 0) handleZoomIn();
     else handleZoomOut();
+  };
+
+  // Drag functionality
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (lightboxZoom > 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - dragPosition.x, y: e.clientY - dragPosition.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && lightboxZoom > 1) {
+      setDragPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
   };
 
   const categoryLabels: Record<string, string> = {
@@ -486,9 +515,13 @@ export default function AdminDashboardPage() {
           )}
 
           <div
-            className="max-w-full max-h-full overflow-auto"
+            className={`max-w-full max-h-full overflow-hidden ${lightboxZoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
             onClick={(e) => e.stopPropagation()}
             onWheel={handleWheelZoom}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
           >
             <img
               src={lightboxImages[lightboxIndex]}
@@ -497,8 +530,9 @@ export default function AdminDashboardPage() {
               style={{
                 maxWidth: '100%',
                 maxHeight: '85vh',
-                transform: `scale(${lightboxZoom})`,
-                transformOrigin: 'center center'
+                transform: `scale(${lightboxZoom}) translate(${dragPosition.x}px, ${dragPosition.y}px)`,
+                transformOrigin: 'center center',
+                cursor: lightboxZoom > 1 ? 'grab' : 'zoom-in'
               }}
               draggable={false}
             />
