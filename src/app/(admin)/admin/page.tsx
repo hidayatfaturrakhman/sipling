@@ -159,26 +159,26 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Memuat...</div>
+        <div className="text-gray-500 dark:text-gray-400">Memuat...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Dashboard Admin</h2>
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Dashboard Admin</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <p className="text-gray-500 text-sm">Total Laporan</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Total Laporan</p>
           <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <p className="text-gray-500 text-sm">Menunggu</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Menunggu</p>
           <p className="text-3xl font-bold text-orange-600">{stats.pending}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <p className="text-gray-500 text-sm">Selesai</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Selesai</p>
           <p className="text-3xl font-bold text-green-600">{stats.resolved}</p>
         </div>
       </div>
@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg"
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg"
         >
           <option value="all">Semua Kategori</option>
           <option value="jalan_rusak">Jalan Rusak</option>
@@ -197,18 +197,18 @@ export default function AdminDashboardPage() {
         </select>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b">
-            <h3 className="font-semibold text-gray-800">Laporan Terbaru</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b dark:border-gray-700">
+            <h3 className="font-semibold text-gray-800 dark:text-white">Laporan Terbaru</h3>
           </div>
-          <div className="max-h-[500px] overflow-y-auto divide-y">
+          <div className="max-h-[500px] overflow-y-auto divide-y dark:divide-gray-700">
             {reports.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">Belum ada laporan</div>
+              <div className="p-6 text-center text-gray-500 dark:text-gray-400">Belum ada laporan</div>
             ) : (
               reports.slice(0, 10).map((report) => (
                 <div
                   key={report.id}
-                  className="p-4 cursor-pointer hover:bg-gray-50"
+                  className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                   onClick={() => setSelectedReport(report)}
                 >
                   <div className="flex items-start gap-3">
@@ -221,18 +221,18 @@ export default function AdminDashboardPage() {
                     )}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium">{categoryLabels[report.category]}</span>
+                        <span className="text-sm font-medium dark:text-white">{categoryLabels[report.category]}</span>
                         <span
                           className={`px-2 py-0.5 rounded text-xs ${
                             report.status === 'pending'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-green-100 text-green-800'
+                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                              : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                           }`}
                         >
                           {report.status === 'pending' ? 'Menunggu' : 'Selesai'}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {new Date(report.created_at).toLocaleDateString('id-ID')}
                       </p>
                     </div>
@@ -246,12 +246,12 @@ export default function AdminDashboardPage() {
       {/* Detail Modal */}
       {selectedReport && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]">
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b shrink-0">
-              <h3 className="text-lg font-semibold">Detail Laporan</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b dark:border-gray-700 shrink-0">
+              <h3 className="text-lg font-semibold dark:text-white">Detail Laporan</h3>
               <button
                 onClick={() => { setSelectedReport(null); setResolutionPhoto(null); }}
-                className="text-gray-400 hover:text-gray-600 p-1"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -262,7 +262,7 @@ export default function AdminDashboardPage() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {selectedReport.photo_url && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Foto Laporan ({selectedReport.photo_url.split(',').length})</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Foto Laporan ({selectedReport.photo_url.split(',').length})</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {selectedReport.photo_url.split(',').map((url: string, index: number) => (
                       <div key={index} className="relative group">
@@ -275,7 +275,7 @@ export default function AdminDashboardPage() {
                         {index === 0 && (
                           <button
                             onClick={(e) => { e.stopPropagation(); openGoogleMaps(selectedReport); }}
-                            className="absolute bottom-1 right-1 bg-white rounded-full p-1 shadow-sm hover:bg-gray-100"
+                            className="absolute bottom-1 right-1 bg-white dark:bg-gray-700 rounded-full p-1 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-600"
                             title="Buka di Google Maps"
                           >
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -292,7 +292,7 @@ export default function AdminDashboardPage() {
 
               {selectedReport.resolution_photo_url && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Foto Bukti Perbaikan</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Foto Bukti Perbaikan</p>
                   <img
                     src={selectedReport.resolution_photo_url}
                     alt="Foto Bukti"
@@ -308,13 +308,13 @@ export default function AdminDashboardPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500">Kategori</p>
-                  <p className="font-medium">{categoryLabels[selectedReport.category]}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Kategori</p>
+                  <p className="font-medium dark:text-white">{categoryLabels[selectedReport.category]}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">Status</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
                   <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                    selectedReport.status === 'pending' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                    selectedReport.status === 'pending' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                   }`}>
                     {selectedReport.status === 'pending' ? 'Menunggu' : 'Selesai'}
                   </span>
@@ -322,22 +322,22 @@ export default function AdminDashboardPage() {
               </div>
 
               <div>
-                <p className="text-xs text-gray-500">Deskripsi</p>
-                <p className="text-sm text-gray-700">{selectedReport.description || 'Tidak ada'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Deskripsi</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{selectedReport.description || 'Tidak ada'}</p>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500">Lokasi</p>
-                <p className="text-sm">{selectedReport.address || `${selectedReport.latitude}, ${selectedReport.longitude}`}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Lokasi</p>
+                <p className="text-sm dark:text-gray-300">{selectedReport.address || `${selectedReport.latitude}, ${selectedReport.longitude}`}</p>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500">Pelapor</p>
-                <p className="text-sm">{selectedReport.profiles?.full_name || selectedReport.profiles?.email || 'Unknown'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Pelapor</p>
+                <p className="text-sm dark:text-gray-300">{selectedReport.profiles?.full_name || selectedReport.profiles?.email || 'Unknown'}</p>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500">Tanggal</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Tanggal</p>
                 <p className="text-sm">
                   {new Date(selectedReport.created_at).toLocaleDateString('id-ID', {
                     day: 'numeric',
