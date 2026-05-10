@@ -10,11 +10,23 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Categories table
+CREATE TABLE IF NOT EXISTS categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  icon TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Reports table
 CREATE TABLE IF NOT EXISTS reports (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  category TEXT NOT NULL CHECK (category IN ('jalan_rusak', 'sampah', 'jalan_berlubang', 'lainnya')),
+  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  category TEXT,
   description TEXT,
   photo_url TEXT,
   latitude FLOAT NOT NULL,
@@ -27,11 +39,18 @@ CREATE TABLE IF NOT EXISTS reports (
 
 -- Row Level Security (RLS)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view all profiles" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Categories policies
+CREATE POLICY "Anyone can view active categories" ON categories FOR SELECT USING (true);
+CREATE POLICY "Admins can manage categories" ON categories FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
 -- Reports policies
 CREATE POLICY "Anyone can view all reports" ON reports FOR SELECT USING (true);
@@ -40,6 +59,14 @@ CREATE POLICY "Users can update own reports" ON reports FOR UPDATE USING (auth.u
 CREATE POLICY "Admins can delete reports" ON reports FOR DELETE USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
+
+-- Insert default categories
+INSERT INTO categories (name, description, icon) VALUES
+  ('jalan_rusak', 'Jalan Rusak', '🛣️'),
+  ('sampah', 'Sampah', '🗑️'),
+  ('jalan_berlubang', 'Jalan Berlubang', '🕳️'),
+  ('lainnya', 'Lainnya', '📌')
+ON CONFLICT (name) DO NOTHING;
 
 -- Trigger to auto-create profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -57,7 +84,8 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Storage bucket for report photos
-INSERT INTO storage.buckets (id, name, public) VALUES ('report-photos', 'report-photos', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('report-photos', 'report-photos', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies
 CREATE POLICY "Public access to report photos" ON storage.objects FOR SELECT USING (bucket_id = 'report-photos');

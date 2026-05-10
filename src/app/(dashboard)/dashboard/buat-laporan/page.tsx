@@ -4,7 +4,15 @@ import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
 export default function BuatLaporanPage() {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
@@ -12,6 +20,7 @@ export default function BuatLaporanPage() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [locationLoading, setLocationLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -19,6 +28,20 @@ export default function BuatLaporanPage() {
   const router = useRouter();
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Fetch active categories
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+      setCategories(data || []);
+      setCategoriesLoading(false);
+    };
+    fetchCategories();
+  }, [supabase]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -123,10 +146,14 @@ export default function BuatLaporanPage() {
 
       photoUrl = urlData.publicUrl;
 
+      // Get category name
+      const selectedCategory = categories.find(c => c.id === category);
+
       // Insert report
       const { error: insertError } = await supabase.from('reports').insert({
         user_id: user.id,
-        category,
+        category_id: category,
+        category: selectedCategory?.name,
         description,
         photo_url: photoUrl,
         latitude: location.lat,
@@ -229,17 +256,24 @@ export default function BuatLaporanPage() {
         {/* Category */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h3 className="font-semibold text-gray-800 mb-4">Kategori</h3>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-          >
-            <option value="">Pilih kategori...</option>
-            <option value="jalan_rusak">Jalan Rusak</option>
-            <option value="sampah">Sampah</option>
-            <option value="jalan_berlubang">Jalan Berlubang</option>
-            <option value="lainnya">Lainnya</option>
-          </select>
+          {categoriesLoading ? (
+            <div className="text-gray-500">Memuat kategori...</div>
+          ) : categories.length === 0 ? (
+            <div className="text-gray-500">Tidak ada kategori aktif</div>
+          ) : (
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="">Pilih kategori...</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Description */}
@@ -265,7 +299,7 @@ export default function BuatLaporanPage() {
           </button>
           <button
             type="submit"
-            disabled={loading || locationLoading}
+            disabled={loading || locationLoading || categoriesLoading}
             className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition disabled:opacity-50"
           >
             {loading ? 'Mengirim...' : 'Kirim Laporan'}
