@@ -46,16 +46,20 @@ export default function AdminLayout({
 
   if (!user) return null;
 
-  const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
+  const isActive = (path: string) => {
+    if (path === '/admin') {
+      return pathname === '/admin';
+    }
+    return pathname === path || pathname.startsWith(path + '/');
+  };
 
   const navItems = [
-    { href: '/admin', icon: '🗺️', label: 'Peta Lokasi', active: isActive('/admin') && !isActive('/admin/') },
+    { href: '/admin', icon: '🗺️', label: 'Peta Lokasi', active: isActive('/admin') },
     { href: '/admin/laporan', icon: '📋', label: 'Semua Laporan', active: isActive('/admin/laporan') },
     { href: '/admin/users', icon: '👥', label: 'Users', active: isActive('/admin/users') },
     { href: '/admin/kategori', icon: '🏷️', label: 'Kategori', active: isActive('/admin/kategori') },
     { href: '/admin/activity', icon: '📜', label: 'Log Aktivitas', active: isActive('/admin/activity') },
     { href: '/admin/export', icon: '📊', label: 'Export', active: isActive('/admin/export') },
-    // { href: '/admin/pengaturan', icon: '⚙️', label: 'Pengaturan', active: isActive('/admin/pengaturan') },
   ];
 
   return (
