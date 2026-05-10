@@ -4,6 +4,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "SIPLING - Sistem Pelaporan Warga",
   description: "Aplikasi pelaporan warga untuk upload foto jalan rusak atau sampah",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
