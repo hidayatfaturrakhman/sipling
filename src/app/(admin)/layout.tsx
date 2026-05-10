@@ -55,6 +55,7 @@ export default function AdminLayout({
     { href: '/admin/kategori', icon: '🏷️', label: 'Kategori', active: isActive('/admin/kategori') },
     { href: '/admin/activity', icon: '📜', label: 'Log Aktivitas', active: isActive('/admin/activity') },
     { href: '/admin/export', icon: '📊', label: 'Export', active: isActive('/admin/export') },
+    { href: '/admin/pengaturan', icon: '⚙️', label: 'Pengaturan', active: isActive('/admin/pengaturan') },
   ];
 
   return (

@@ -54,11 +54,28 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- App Settings table
+CREATE TABLE IF NOT EXISTS app_settings (
+  id TEXT PRIMARY KEY DEFAULT 'default',
+  institution_name TEXT DEFAULT 'SIPLING',
+  institution_logo TEXT,
+  address TEXT,
+  phone TEXT,
+  email TEXT,
+  description TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Insert default settings
+INSERT INTO app_settings (id, institution_name, description) VALUES ('default', 'SIPLING', 'Sistem Pelaporan Warga')
+ON CONFLICT (id) DO NOTHING;
+
 -- Row Level Security (RLS)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view all profiles" ON profiles FOR SELECT USING (true);
@@ -86,6 +103,12 @@ CREATE POLICY "Admins can view all logs" ON activity_logs FOR SELECT USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "Users can create logs" ON activity_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- App Settings policies
+CREATE POLICY "Anyone can view app settings" ON app_settings FOR SELECT USING (true);
+CREATE POLICY "Admins can update app settings" ON app_settings FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
 -- Insert default categories
 INSERT INTO categories (name, description, icon) VALUES
