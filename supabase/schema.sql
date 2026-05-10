@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   latitude FLOAT,
   longitude FLOAT,
   role TEXT NOT NULL CHECK (role IN ('admin', 'warga')) DEFAULT 'warga',
+  last_login TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -43,15 +44,26 @@ CREATE TABLE IF NOT EXISTS reports (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Activity Logs table
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  details TEXT,
+  ip_address TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Row Level Security (RLS)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view all profiles" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Admins can view all profiles" ON profiles FOR SELECT USING (
+CREATE POLICY "Admins can manage profiles" ON profiles FOR ALL USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
@@ -68,6 +80,12 @@ CREATE POLICY "Users can update own reports" ON reports FOR UPDATE USING (auth.u
 CREATE POLICY "Admins can delete reports" ON reports FOR DELETE USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
+
+-- Activity logs policies
+CREATE POLICY "Admins can view all logs" ON activity_logs FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Users can create logs" ON activity_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Insert default categories
 INSERT INTO categories (name, description, icon) VALUES
@@ -101,6 +119,21 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Trigger to log login activity
+CREATE OR REPLACE FUNCTION public.handle_login()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.profiles
+  SET last_login = NOW()
+  WHERE id = NEW.id;
+
+  INSERT INTO public.activity_logs (user_id, action, details)
+  VALUES (NEW.id, 'login', 'User logged in');
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Storage bucket for report photos
 INSERT INTO storage.buckets (id, name, public) VALUES ('report-photos', 'report-photos', true)

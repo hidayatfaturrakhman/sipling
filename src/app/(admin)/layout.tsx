@@ -51,7 +51,9 @@ export default function AdminLayout({
   const navItems = [
     { href: '/admin', icon: '🗺️', label: 'Peta Lokasi', active: isActive('/admin') && !isActive('/admin/') },
     { href: '/admin/laporan', icon: '📋', label: 'Semua Laporan', active: isActive('/admin/laporan') },
+    { href: '/admin/users', icon: '👥', label: 'Users', active: isActive('/admin/users') },
     { href: '/admin/kategori', icon: '🏷️', label: 'Kategori', active: isActive('/admin/kategori') },
+    { href: '/admin/activity', icon: '📜', label: 'Log Aktivitas', active: isActive('/admin/activity') },
     { href: '/admin/export', icon: '📊', label: 'Export', active: isActive('/admin/export') },
   ];
 
