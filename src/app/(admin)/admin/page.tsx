@@ -74,40 +74,18 @@ export default function AdminDashboardPage() {
 
     setResolving(true);
     try {
-      let updateData: any = {
-        status: 'resolved',
-        updated_at: new Date().toISOString()
-      };
-
-      if (resolutionPhoto) {
-        const fileName = `resolution-${Date.now()}-${resolutionPhoto.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('report-photos')
-          .upload(fileName, resolutionPhoto);
-
-        if (uploadError) throw new Error(uploadError.message);
-
-        const { data: urlData } = supabase.storage
-          .from('report-photos')
-          .getPublicUrl(fileName);
-
-        updateData.resolution_photo_url = urlData.publicUrl;
-        updateData.resolved_at = new Date().toISOString();
-      }
-
-      const { error: updateError } = await supabase.from('reports').update(updateData).eq('id', selectedReport.id);
+      // Simple update - just status field
+      const { error: updateError } = await supabase
+        .from('reports')
+        .update({
+          status: 'resolved',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedReport.id);
 
       if (updateError) {
-        console.error('Update error:', updateError);
-        if (updateError.message.includes('resolution_photo_url') || updateError.message.includes('resolved_at')) {
-          const { error: simpleError } = await supabase.from('reports').update({
-            status: 'resolved',
-            updated_at: new Date().toISOString()
-          }).eq('id', selectedReport.id);
-          if (simpleError) throw new Error(simpleError.message);
-        } else {
-          throw new Error(updateError.message);
-        }
+        console.error('Supabase error:', updateError);
+        throw new Error(updateError.message);
       }
 
       setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved' } : r));
