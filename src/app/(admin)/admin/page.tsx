@@ -1,26 +1,8 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { compressImage } from '@/lib/utils';
-import dynamic from 'next/dynamic';
-
-const MapContainer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-const TileLayer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-const Marker = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Marker),
-  { ssr: false }
-);
-const Popup = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Popup),
-  { ssr: false }
-);
 
 interface Report {
   id: string;
@@ -46,14 +28,9 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [mapReady, setMapReady] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [resolutionPhoto, setResolutionPhoto] = useState<File | null>(null);
   const supabase = createClient();
-
-  useEffect(() => {
-    setMapReady(true);
-  }, []);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -170,9 +147,6 @@ export default function AdminDashboardPage() {
     lainnya: 'Lainnya',
   };
 
-  const defaultCenter: [number, number] = [-6.2, 106.8]; // Jakarta
-  const defaultZoom = 11;
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -214,50 +188,11 @@ export default function AdminDashboardPage() {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Map */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b">
-            <h3 className="font-semibold text-gray-800">Peta Lokasi</h3>
-          </div>
-          <div className="h-[400px]">
-            {mapReady && typeof window !== 'undefined' && (
-              <MapContainer
-                center={defaultCenter}
-                zoom={defaultZoom}
-                style={{ height: '100%', width: '100%' }}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {reports.map((report) => (
-                  <Marker
-                    key={report.id}
-                    position={[report.latitude, report.longitude]}
-                    eventHandlers={{
-                      click: () => setSelectedReport(report),
-                    }}
-                  >
-                    <Popup>
-                      <div className="text-sm">
-                        <p className="font-semibold">{categoryLabels[report.category]}</p>
-                        <p className="text-gray-600">{report.address || 'Tidak ada alamat'}</p>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              </MapContainer>
-            )}
-          </div>
-        </div>
-
-        {/* Recent Reports List */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b">
             <h3 className="font-semibold text-gray-800">Laporan Terbaru</h3>
           </div>
-          <div className="max-h-[400px] overflow-y-auto divide-y">
+          <div className="max-h-[500px] overflow-y-auto divide-y">
             {reports.length === 0 ? (
               <div className="p-6 text-center text-gray-500">Belum ada laporan</div>
             ) : (
@@ -298,7 +233,6 @@ export default function AdminDashboardPage() {
             )}
           </div>
         </div>
-      </div>
 
       {/* Detail Modal */}
       {selectedReport && (
