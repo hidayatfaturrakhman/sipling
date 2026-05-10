@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function DashboardLayout({
   children,
@@ -68,7 +67,6 @@ export default function DashboardLayout({
             <span className="text-lg font-bold text-blue-600">SIPLING</span>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <button
               onClick={handleLogout}
               className="text-gray-600 dark:text-gray-300 p-2"
@@ -89,7 +87,6 @@ export default function DashboardLayout({
             <h1 className="text-xl font-bold text-blue-600">SIPLING</h1>
           </div>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <span className="text-gray-600 dark:text-gray-300">{user.full_name || user.email}</span>
             <button
               onClick={handleLogout}

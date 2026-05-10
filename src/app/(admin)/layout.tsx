@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function AdminLayout({
   children,
@@ -81,7 +80,6 @@ export default function AdminLayout({
             <span className="text-lg font-bold text-blue-600">SIPLING</span>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <button
               onClick={handleLogout}
               className="text-gray-600 dark:text-gray-300 p-2"
@@ -105,7 +103,6 @@ export default function AdminLayout({
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <span className="text-gray-600 dark:text-gray-300">{user.full_name || user.email}</span>
             <button
               onClick={handleLogout}
