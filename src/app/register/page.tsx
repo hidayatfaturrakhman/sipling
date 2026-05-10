@@ -1,9 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+interface ValidationErrors {
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  fullName?: string;
+  nik?: string;
+  phone?: string;
+}
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -15,6 +24,7 @@ export default function RegisterPage() {
     address: '',
     phone: '',
   });
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [addressFromGps, setAddressFromGps] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,33 +69,111 @@ export default function RegisterPage() {
     }
   }, [location]);
 
+  const validation = useMemo((): ValidationErrors => {
+    const errors: ValidationErrors = {};
+
+    // Email validation
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        errors.email = 'Format email tidak valid';
+      }
+    }
+
+    // Password validation
+    if (formData.password) {
+      if (formData.password.length < 8) {
+        errors.password = 'Password minimal 8 karakter';
+      } else if (!/[A-Z]/.test(formData.password)) {
+        errors.password = 'Password harus mengandung huruf besar';
+      } else if (!/[a-z]/.test(formData.password)) {
+        errors.password = 'Password harus mengandung huruf kecil';
+      } else if (!/[0-9]/.test(formData.password)) {
+        errors.password = 'Password harus mengandung angka';
+      }
+    }
+
+    // Confirm password
+    if (formData.confirmPassword && formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Password tidak cocok';
+    }
+
+    // Full name validation
+    if (formData.fullName) {
+      if (formData.fullName.trim().length < 2) {
+        errors.fullName = 'Nama lengkap minimal 2 karakter';
+      } else if (!/^[a-zA-Z\s']+$/.test(formData.fullName)) {
+        errors.fullName = 'Nama hanya boleh huruf dan spasi';
+      }
+    }
+
+    // NIK validation - must be 16 digits
+    if (formData.nik) {
+      if (!/^\d+$/.test(formData.nik)) {
+        errors.nik = 'NIK harus berupa angka';
+      } else if (formData.nik.length !== 16) {
+        errors.nik = 'NIK harus 16 digit';
+      }
+    }
+
+    // Phone validation - Indonesian format
+    if (formData.phone) {
+      const phoneClean = formData.phone.replace(/[\s-]/g, '');
+      const phoneRegex = /^(\+62|62|0)[0-9]{9,12}$/;
+      if (!phoneRegex.test(phoneClean)) {
+        errors.phone = 'Format no. HP tidak valid (contoh: 0812xxxx atau +62812xxxx)';
+      }
+    }
+
+    return errors;
+  }, [formData]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // Format phone number
+    if (name === 'phone') {
+      const cleaned = value.replace(/[^\d]/g, '');
+      setFormData({ ...formData, [name]: cleaned });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setTouched({ ...touched, [e.target.name]: true });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Password tidak cocok');
+    // Mark all fields as touched
+    setTouched({
+      email: true,
+      password: true,
+      confirmPassword: true,
+      fullName: true,
+      nik: true,
+      phone: true,
+    });
+
+    // Check validation
+    if (Object.keys(validation).length > 0) {
+      setError('Mohon periksa kembali data yang diisi');
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password minimal 6 karakter');
-      return;
-    }
-
-    if (!formData.nik || formData.nik.length < 10) {
-      setError('NIK harus diisi dengan benar');
+    // Validate required fields
+    if (!formData.email || !formData.password || !formData.fullName || !formData.nik || !formData.phone) {
+      setError('Semua field wajib diisi');
       return;
     }
 
     setLoading(true);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -113,6 +201,8 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+
+  const isFieldError = (field: keyof ValidationErrors) => touched[field] && validation[field];
 
   if (success) {
     return (
@@ -158,21 +248,35 @@ export default function RegisterPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    onBlur={handleBlur}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                      isFieldError('email') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     required
                   />
+                  {isFieldError('email') && (
+                    <p className="text-xs text-red-500 mt-1">{validation.email}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password *
+                    <span className="text-xs text-gray-500 font-normal ml-1">(8+ karakter, huruf besar, kecil, angka)</span>
+                  </label>
                   <input
                     type="password"
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    minLength={6}
+                    onBlur={handleBlur}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                      isFieldError('password') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     required
                   />
+                  {isFieldError('password') && (
+                    <p className="text-xs text-red-500 mt-1">{validation.password}</p>
+                  )}
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password *</label>
@@ -181,9 +285,15 @@ export default function RegisterPage() {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    onBlur={handleBlur}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                      isFieldError('confirmPassword') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     required
                   />
+                  {isFieldError('confirmPassword') && (
+                    <p className="text-xs text-red-500 mt-1">{validation.confirmPassword}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -199,33 +309,59 @@ export default function RegisterPage() {
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    onBlur={handleBlur}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                      isFieldError('fullName') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     required
                   />
+                  {isFieldError('fullName') && (
+                    <p className="text-xs text-red-500 mt-1">{validation.fullName}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">NIK *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    NIK *
+                    <span className="text-xs text-gray-500 font-normal ml-1">(16 digit)</span>
+                  </label>
                   <input
                     type="text"
                     name="nik"
                     value={formData.nik}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    onBlur={handleBlur}
                     maxLength={16}
-                    minLength={10}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                      isFieldError('nik') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     required
                   />
+                  {isFieldError('nik') && (
+                    <p className="text-xs text-red-500 mt-1">{validation.nik}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">{formData.nik.length}/16 digit</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">No. HP *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    No. HP *
+                    <span className="text-xs text-gray-500 font-normal ml-1">(08xxxxxxxxx)</span>
+                  </label>
                   <input
                     type="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    onBlur={handleBlur}
+                    maxLength={14}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                      isFieldError('phone') ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="0812xxxxx"
                     required
                   />
+                  {isFieldError('phone') && (
+                    <p className="text-xs text-red-500 mt-1">{validation.phone}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -236,7 +372,7 @@ export default function RegisterPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Alamat {locationLoading ? '(Mendeteksi lokasi...)' : '(Opsional - bisa gunakan GPS)'}
+                    Alamat {locationLoading ? '(Mendeteksi lokasi...)' : '(Opsional)'}
                   </label>
                   {location && (
                     <div className="mb-2 text-xs text-gray-500 flex items-center gap-1">
@@ -250,10 +386,10 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     rows={3}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder={location ? 'Atau masukkan alamat manual...' : 'Mohon aktifkan GPS untuk auto-detect'}
+                    placeholder={location ? 'Atau masukkan alamat manual...' : 'Aktifkan GPS untuk auto-detect'}
                   />
                   {addressFromGps && !formData.address && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-green-600 mt-1">
                       ✓ Terisi otomatis dari GPS
                     </p>
                   )}
