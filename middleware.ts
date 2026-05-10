@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public routes
-  if (pathname === '/' || pathname.startsWith('/login')) {
+  if (pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/register')) {
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
