@@ -23,6 +23,7 @@ export default function PengaturanPage() {
     email: '',
     description: '',
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -56,8 +57,7 @@ export default function PengaturanPage() {
         return;
       }
       setLogoPreview(URL.createObjectURL(file));
-      // Simpan file untuk diupload
-      setSettings({ ...settings, institution_logo: file as any });
+      setLogoFile(file);
     }
   };
 
@@ -69,8 +69,8 @@ export default function PengaturanPage() {
       let logoUrl = settings.institution_logo;
 
       // Upload logo jika ada file baru
-      if (settings.institution_logo instanceof File) {
-        const file = settings.institution_logo;
+      if (logoFile) {
+        const file = logoFile;
         const fileName = `logo-${Date.now()}.${file.name.split('.').pop()}`;
 
         const { error: uploadError } = await supabase.storage
