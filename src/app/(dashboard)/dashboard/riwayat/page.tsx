@@ -22,6 +22,9 @@ export default function RiwayatPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
@@ -75,6 +78,18 @@ export default function RiwayatPage() {
     sampah: 'bg-green-100 text-green-800',
     jalan_berlubang: 'bg-orange-100 text-orange-800',
     lainnya: 'bg-gray-100 text-gray-800',
+  };
+
+  const openLightbox = (images: string[], index: number) => {
+    setLightboxImages(images);
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setLightboxIndex(0);
+    setLightboxImages([]);
   };
 
   if (loading) {
@@ -147,7 +162,8 @@ export default function RiwayatPage() {
                   <img
                     src={report.photo_url.split(',')[0]}
                     alt="Foto"
-                    className="w-full md:w-32 h-32 object-cover rounded-lg"
+                    className="w-full md:w-32 h-32 object-cover rounded-lg cursor-pointer hover:opacity-90"
+                    onClick={() => openLightbox(report.photo_url.split(','), 0)}
                   />
                 )}
                 <div className="flex-1">
@@ -204,6 +220,55 @@ export default function RiwayatPage() {
           ))
         )}
       </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-[99999] p-2 sm:p-4"
+          onClick={closeLightbox}
+        >
+          <button
+            onClick={closeLightbox}
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white hover:text-gray-300 p-2"
+          >
+            <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {lightboxImages.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length); }}
+                className="absolute left-2 sm:left-4 text-white hover:text-gray-300 p-2"
+              >
+                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % lightboxImages.length); }}
+                className="absolute right-2 sm:right-4 text-white hover:text-gray-300 p-2"
+              >
+                <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
+
+          <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={lightboxImages[lightboxIndex]}
+              alt={`Foto ${lightboxIndex + 1}`}
+              className="max-w-full max-h-[85vh] sm:max-h-[90vh] object-contain rounded"
+            />
+            <p className="text-white text-center mt-2 text-sm">
+              {lightboxIndex + 1} / {lightboxImages.length}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
