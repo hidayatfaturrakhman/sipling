@@ -2,8 +2,8 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
-
 import { compressImage } from '@/lib/utils';
+import { useToast } from '@/components/Toast';
 
 interface Report {
   id: string;
@@ -39,6 +39,7 @@ export default function AdminLaporanPage() {
   const [resolutionPhoto, setResolutionPhoto] = useState<File | null>(null);
   const itemsPerPage = 10;
   const supabase = createClient();
+  const { showToast } = useToast();
 
   useEffect(() => {
     // Reset to page 1 when filters change
@@ -93,21 +94,26 @@ export default function AdminLaporanPage() {
         const { error: uploadError } = await supabase.storage
           .from('report-photos')
           .upload(fileName, resolutionPhoto);
-        if (uploadError) throw uploadError;
+        if (uploadError) throw new Error(uploadError.message);
         const { data: urlData } = supabase.storage.from('report-photos').getPublicUrl(fileName);
         resolutionPhotoUrl = urlData.publicUrl;
       }
-      await supabase.from('reports').update({
+      const { error: updateError } = await supabase.from('reports').update({
         status: 'resolved',
         resolution_photo_url: resolutionPhotoUrl,
         resolved_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }).eq('id', selectedReport.id);
+
+      if (updateError) throw new Error(updateError.message);
+
       setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved', resolution_photo_url: resolutionPhotoUrl, resolved_at: new Date().toISOString() } : r));
       setSelectedReport(null);
       setResolutionPhoto(null);
-    } catch (err) {
+      showToast('Laporan berhasil ditandai selesai!', 'success');
+    } catch (err: any) {
       console.error('Error:', err);
+      showToast(err.message || 'Gagal menyelesaikan laporan', 'error');
     } finally {
       setResolving(false);
     }
