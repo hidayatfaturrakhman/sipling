@@ -27,6 +27,8 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 interface Report {
   id: string;
+  user_id: string;
+  category_id: string;
   category: string;
   description: string;
   photo_url: string;
@@ -113,6 +115,7 @@ export default function AdminLaporanPage() {
     if (!selectedReport) return;
     setResolving(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       let resolutionPhotoUrl = selectedReport.resolution_photo_url || null;
 
       // Upload resolution photo if exists
@@ -142,6 +145,23 @@ export default function AdminLaporanPage() {
 
       if (updateError) throw new Error(updateError.message);
 
+      // Insert to resolved_reports backup table
+      await supabase.from('resolved_reports').insert({
+        id: selectedReport.id,
+        user_id: selectedReport.user_id,
+        category_id: selectedReport.category_id || null,
+        category: selectedReport.category,
+        description: selectedReport.description,
+        photo_url: selectedReport.photo_url,
+        latitude: selectedReport.latitude,
+        longitude: selectedReport.longitude,
+        address: selectedReport.address,
+        resolution_photo_url: resolutionPhotoUrl,
+        resolved_at: new Date().toISOString(),
+        created_at: selectedReport.created_at,
+        moved_at: new Date().toISOString(),
+      });
+
       // Send email notification to reporter
       const reporterEmail = selectedReport.profiles?.email;
       const reporterName = selectedReport.profiles?.full_name || 'Warga';
@@ -167,7 +187,7 @@ export default function AdminLaporanPage() {
       setResolutionPhoto(null);
       showToast('Laporan berhasil ditandai selesai! Email notifikasi sudah dikirim.', 'success');
       await logActivity('resolve_report', `Menyelesaikan laporan: ${selectedReport.category}`);
-      await logReportHistory(selectedReport.id, 'resolved', `Laporan diselesaikan oleh admin`);
+      await logReportHistory(selectedReport.id, 'resolved', `Laporan diselesaikan oleh admin`, user?.id);
     } catch (err: any) {
       console.error('Error:', err);
       showToast(err.message || 'Gagal menyelesaikan laporan', 'error');
@@ -200,13 +220,25 @@ export default function AdminLaporanPage() {
   const handleDelete = async () => {
     if (!confirmDelete.id) return;
     const deletedReport = reports.find(r => r.id === confirmDelete.id);
-    await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', confirmDelete.id);
+
+    // Check if it's a resolved report - require special confirmation
+    if (deletedReport?.status === 'resolved') {
+      showToast('Tidak bisa hapus laporan selesai dari halaman ini. Hubungi superadmin jika diperlukan.', 'error');
+      setConfirmDelete({ open: false, id: null });
+      return;
+    }
+
+    const { error: deleteError } = await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', confirmDelete.id);
+    if (deleteError) {
+      showToast('Gagal menghapus laporan', 'error');
+      return;
+    }
     setReports(reports.filter(r => r.id !== confirmDelete.id));
     setSelectedReport(null);
     setConfirmDelete({ open: false, id: null });
     if (deletedReport) {
       await logActivity('delete_report', `Menghapus laporan: ${deletedReport.category}`);
-      await logReportHistory(confirmDelete.id, 'deleted', `Laporan "${deletedReport.category}" dihapus oleh admin`);
+      await logReportHistory(confirmDelete.id, 'deleted', `Laporan "${deletedReport.category}" dihapus oleh admin`, deletedReport.user_id);
     }
   };
 

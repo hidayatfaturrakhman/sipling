@@ -67,6 +67,50 @@ CREATE TABLE IF NOT EXISTS report_history (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Resolved Reports Backup table
+CREATE TABLE IF NOT EXISTS resolved_reports (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  category TEXT,
+  description TEXT,
+  photo_url TEXT,
+  latitude FLOAT,
+  longitude FLOAT,
+  address TEXT,
+  resolution_photo_url TEXT,
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  moved_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Function to move resolved report to backup
+CREATE OR REPLACE FUNCTION move_to_resolved_backup()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status = 'resolved' AND OLD.status = 'pending' THEN
+    INSERT INTO resolved_reports (
+      id, user_id, category_id, category, description, photo_url,
+      latitude, longitude, address, resolution_photo_url,
+      resolved_at, created_at, moved_at
+    )
+    SELECT
+      NEW.id, NEW.user_id, NEW.category_id, NEW.category, NEW.description, NEW.photo_url,
+      NEW.latitude, NEW.longitude, NEW.address, NEW.resolution_photo_url,
+      NEW.resolved_at, NEW.created_at, NOW();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to auto-move resolved reports
+DROP TRIGGER IF EXISTS on_report_resolved ON reports;
+CREATE TRIGGER on_report_resolved
+  AFTER UPDATE ON reports
+  FOR EACH ROW
+  WHEN (NEW.status = 'resolved' AND OLD.status = 'pending')
+  EXECUTE FUNCTION move_to_resolved_backup();
+
 -- App Settings table
 CREATE TABLE IF NOT EXISTS app_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',
@@ -124,6 +168,17 @@ CREATE POLICY "Users can create logs" ON activity_logs FOR INSERT WITH CHECK (au
 CREATE POLICY "Anyone can view report history" ON report_history FOR SELECT USING (true);
 CREATE POLICY "Users can create report history" ON report_history FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update report history" ON report_history FOR UPDATE USING (auth.uid() = user_id);
+
+-- Resolved Reports Backup policies
+CREATE POLICY "Admins can view resolved reports backup" ON resolved_reports FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Admins can insert resolved reports backup" ON resolved_reports FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Admins can delete resolved reports backup" ON resolved_reports FOR DELETE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
 -- App Settings policies
 CREATE POLICY "Anyone can view app settings" ON app_settings FOR SELECT USING (true);

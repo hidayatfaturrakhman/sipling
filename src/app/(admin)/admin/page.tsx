@@ -17,10 +17,13 @@ import {
   MapPin,
   X,
   ImageIcon,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface Report {
   id: string;
+  user_id: string;
+  category_id: string;
   category: string;
   description: string;
   photo_url: string;
@@ -119,6 +122,23 @@ export default function AdminDashboardPage() {
 
       if (updateError) throw new Error(updateError.message);
 
+      // Also insert to resolved_reports backup table
+      await supabase.from('resolved_reports').insert({
+        id: selectedReport.id,
+        user_id: selectedReport.user_id,
+        category_id: selectedReport.category_id || null,
+        category: selectedReport.category,
+        description: selectedReport.description,
+        photo_url: selectedReport.photo_url,
+        latitude: selectedReport.latitude,
+        longitude: selectedReport.longitude,
+        address: selectedReport.address,
+        resolution_photo_url: selectedReport.resolution_photo_url,
+        resolved_at: new Date().toISOString(),
+        created_at: selectedReport.created_at,
+        moved_at: new Date().toISOString(),
+      });
+
       setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved' } : r));
       setResolvedReports(prev => [{ ...selectedReport, status: 'resolved', resolved_at: new Date().toISOString() }, ...prev]);
       setStats(stats => ({
@@ -163,14 +183,23 @@ export default function AdminDashboardPage() {
   const handleDelete = async () => {
     if (!confirmDelete.id) return;
     const deletedReport = reports.find(r => r.id === confirmDelete.id);
+
+    // Check if it's a resolved report - require special confirmation
+    if (deletedReport?.status === 'resolved') {
+      // Show warning and don't allow direct delete from reports table
+      showToast('Tidak bisa hapus laporan selesai dari halaman ini. Gunakan menu "Laporan Selesai" untuk mengelolanya.', 'error');
+      setConfirmDelete({ open: false, id: null });
+      return;
+    }
+
     await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', confirmDelete.id);
     setReports(reports.filter(r => r.id !== confirmDelete.id));
-    setStats(stats => ({ ...stats, total: stats.total - 1 }));
+    setStats(stats => ({ ...stats, total: stats.total - 1, pending: stats.pending - 1 }));
     setSelectedReport(null);
     setConfirmDelete({ open: false, id: null });
     if (deletedReport) {
       await logActivity('delete_report', `Menghapus laporan: ${deletedReport.category}`);
-      await logReportHistory(confirmDelete.id, 'deleted', `Laporan "${deletedReport.category}" dihapus oleh admin`);
+      await logReportHistory(deletedReport.id, 'deleted', `Laporan "${deletedReport.category}" dihapus oleh admin`, deletedReport.user_id);
     }
   };
 
