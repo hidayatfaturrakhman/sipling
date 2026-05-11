@@ -57,6 +57,16 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Report History table
+CREATE TABLE IF NOT EXISTS report_history (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  report_id UUID NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  action TEXT NOT NULL CHECK (action IN ('created', 'viewed', 'updated', 'resolved', 'deleted', 'status_changed')),
+  details TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- App Settings table
 CREATE TABLE IF NOT EXISTS app_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',
@@ -109,6 +119,11 @@ CREATE POLICY "Admins can view all logs" ON activity_logs FOR SELECT USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "Users can create logs" ON activity_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Report History policies
+CREATE POLICY "Anyone can view report history" ON report_history FOR SELECT USING (true);
+CREATE POLICY "Users can create report history" ON report_history FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update report history" ON report_history FOR UPDATE USING (auth.uid() = user_id);
 
 -- App Settings policies
 CREATE POLICY "Anyone can view app settings" ON app_settings FOR SELECT USING (true);

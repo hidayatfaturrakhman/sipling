@@ -187,14 +187,15 @@ export default function BuatLaporanPage() {
 
       const photoUrl = photoUrls.join(','); // Store multiple URLs separated by comma
 
-      // Get category name
+      // Get category details
       const selectedCategory = categories.find(c => c.id === category);
+      const categoryName = selectedCategory?.name || category;
 
       // Insert report
       const { data: insertData, error: insertError } = await supabase.from('reports').insert({
         user_id: user.id,
         category_id: category,
-        category: selectedCategory?.name,
+        category: categoryName,
         description,
         photo_url: photoUrl,
         latitude: location.lat,
@@ -205,8 +206,8 @@ export default function BuatLaporanPage() {
 
       if (insertError) throw insertError;
 
-      await logActivity('create_report', `Membuat laporan: ${selectedCategory?.name}`, user.id);
-      await logReportHistory(insertData.id, 'created', `Laporan "${selectedCategory?.name}" berhasil dibuat`);
+      await logActivity('create_report', `Membuat laporan: ${categoryName}`, user.id);
+      await logReportHistory(insertData.id, 'created', `Laporan "${categoryName}" berhasil dibuat`, user.id);
 
       setSuccess(true);
       showToast('Laporan berhasil dikirim!', 'success');
