@@ -39,10 +39,12 @@ interface Report {
 
 export default function AdminDashboardPage() {
   const [reports, setReports] = useState<Report[]>([]);
+  const [resolvedReports, setResolvedReports] = useState<Report[]>([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, resolved: 0 });
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [showResolved, setShowResolved] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [resolutionPhoto, setResolutionPhoto] = useState<File | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -82,7 +84,17 @@ export default function AdminDashboardPage() {
         .eq('status', 'resolved')
         .is('deleted_at', null);
 
+      // Fetch resolved reports for separate table
+      const { data: resolvedData } = await supabase
+        .from('reports')
+        .select('*, profiles(full_name, email)')
+        .eq('status', 'resolved')
+        .is('deleted_at', null)
+        .order('resolved_at', { ascending: false })
+        .limit(50);
+
       setReports(reportsData || []);
+      setResolvedReports(resolvedData || []);
       setStats({ total: total || 0, pending: pending || 0, resolved: resolved || 0 });
       setLoading(false);
     };
@@ -94,10 +106,13 @@ export default function AdminDashboardPage() {
     if (!selectedReport) return;
     setResolving(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+
       const { error: updateError } = await supabase
         .from('reports')
         .update({
           status: 'resolved',
+          resolved_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedReport.id);
@@ -105,6 +120,7 @@ export default function AdminDashboardPage() {
       if (updateError) throw new Error(updateError.message);
 
       setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved' } : r));
+      setResolvedReports(prev => [{ ...selectedReport, status: 'resolved', resolved_at: new Date().toISOString() }, ...prev]);
       setStats(stats => ({
         ...stats,
         pending: stats.pending - 1,
@@ -114,7 +130,7 @@ export default function AdminDashboardPage() {
       setResolutionPhoto(null);
       showToast('Laporan berhasil ditandai selesai!', 'success');
       await logActivity('resolve_report', `Menyelesaikan laporan: ${selectedReport.category}`);
-      await logReportHistory(selectedReport.id, 'resolved', `Laporan diselesaikan oleh admin`);
+      await logReportHistory(selectedReport.id, 'resolved', `Laporan diselesaikan oleh admin`, user?.id);
     } catch (err: any) {
       console.error('Error resolving report:', err);
       showToast(err.message || 'Gagal menyelesaikan laporan', 'error');
@@ -231,54 +247,119 @@ export default function AdminDashboardPage() {
         </select>
       </div>
 
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setShowResolved(false)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+            !showResolved
+              ? 'bg-blue-600 text-white'
+              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Menunggu ({stats.pending})
+        </button>
+        <button
+          onClick={() => setShowResolved(true)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+            showResolved
+              ? 'bg-green-600 text-white'
+              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+          }`}
+        >
+          <CheckCircle2 className="w-4 h-4" />
+          Selesai ({stats.resolved})
+        </button>
+      </div>
+
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b dark:border-gray-700">
-            <h3 className="font-semibold text-gray-800 dark:text-white">Laporan Terbaru</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-white">
+              {showResolved ? 'Laporan Selesai' : 'Laporan Menunggu'}
+            </h3>
           </div>
           <div className="max-h-[500px] overflow-y-auto divide-y dark:divide-gray-700">
-            {reports.length === 0 ? (
-              <div className="p-6 text-center text-gray-500 dark:text-gray-400">Belum ada laporan</div>
-            ) : (
-              reports.slice(0, 10).map((report) => (
-                <div
-                  key={report.id}
-                  className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                  onClick={() => setSelectedReport(report)}
-                >
-                  <div className="flex items-start gap-3">
-                    {report.photo_url && (
-                      <img
-                        src={report.photo_url?.split(',')[0]}
-                        alt="Foto"
-                        className="w-12 h-12 object-cover rounded-lg"
-                      />
-                    )}
-                    {!report.photo_url && (
-                      <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                        <ImageIcon className="w-5 h-5 text-gray-400" />
+            {showResolved ? (
+              resolvedReports.length === 0 ? (
+                <div className="p-6 text-center text-gray-500 dark:text-gray-400">Belum ada laporan selesai</div>
+              ) : (
+                resolvedReports.map((report) => (
+                  <div
+                    key={report.id}
+                    className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => setSelectedReport(report)}
+                  >
+                    <div className="flex items-start gap-3">
+                      {report.photo_url && (
+                        <img
+                          src={report.photo_url?.split(',')[0]}
+                          alt="Foto"
+                          className="w-12 h-12 object-cover rounded-lg"
+                        />
+                      )}
+                      {!report.photo_url && (
+                        <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                          <ImageIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-medium dark:text-white">{categoryLabels[report.category]}</span>
+                          <span className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            Selesai
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {report.resolved_at && `Diselesaikan: ${new Date(report.resolved_at).toLocaleDateString('id-ID')}`}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Dibuat: {new Date(report.created_at).toLocaleDateString('id-ID')}
+                        </p>
                       </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <FileText className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm font-medium dark:text-white">{categoryLabels[report.category]}</span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs ${
-                            report.status === 'pending'
-                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                              : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          }`}
-                        >
-                          {report.status === 'pending' ? 'Menunggu' : 'Selesai'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(report.created_at).toLocaleDateString('id-ID')}
-                      </p>
                     </div>
                   </div>
-                </div>
-              ))
+                ))
+              )
+            ) : (
+              reports.filter(r => r.status === 'pending').length === 0 ? (
+                <div className="p-6 text-center text-gray-500 dark:text-gray-400">Tidak ada laporan menunggu</div>
+              ) : (
+                reports.filter(r => r.status === 'pending').slice(0, 10).map((report) => (
+                  <div
+                    key={report.id}
+                    className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={() => setSelectedReport(report)}
+                  >
+                    <div className="flex items-start gap-3">
+                      {report.photo_url && (
+                        <img
+                          src={report.photo_url?.split(',')[0]}
+                          alt="Foto"
+                          className="w-12 h-12 object-cover rounded-lg"
+                        />
+                      )}
+                      {!report.photo_url && (
+                        <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                          <ImageIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Clock className="w-4 h-4 text-orange-500" />
+                          <span className="text-sm font-medium dark:text-white">{categoryLabels[report.category]}</span>
+                          <span className="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                            Menunggu
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(report.created_at).toLocaleDateString('id-ID')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )
             )}
           </div>
         </div>
