@@ -8,6 +8,16 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Lightbox } from '@/components/Lightbox';
 import { logActivity } from '@/lib/activityLog';
 import { logReportHistory } from '@/lib/reportHistory';
+import {
+  FileText,
+  Clock,
+  CheckCircle2,
+  Trash2,
+  Check,
+  MapPin,
+  X,
+  ImageIcon,
+} from 'lucide-react';
 
 interface Report {
   id: string;
@@ -179,15 +189,30 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Total Laporan</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Total Laporan</p>
+          </div>
           <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Menunggu</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+              <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Menunggu</p>
+          </div>
           <p className="text-3xl font-bold text-orange-600">{stats.pending}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Selesai</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Selesai</p>
+          </div>
           <p className="text-3xl font-bold text-green-600">{stats.resolved}</p>
         </div>
       </div>
@@ -225,11 +250,17 @@ export default function AdminDashboardPage() {
                       <img
                         src={report.photo_url?.split(',')[0]}
                         alt="Foto"
-                        className="w-12 h-12 object-cover rounded"
+                        className="w-12 h-12 object-cover rounded-lg"
                       />
+                    )}
+                    {!report.photo_url && (
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <ImageIcon className="w-5 h-5 text-gray-400" />
+                      </div>
                     )}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
+                        <FileText className="w-4 h-4 text-gray-400" />
                         <span className="text-sm font-medium dark:text-white">{categoryLabels[report.category]}</span>
                         <span
                           className={`px-2 py-0.5 rounded text-xs ${
@@ -262,9 +293,7 @@ export default function AdminDashboardPage() {
                 onClick={() => { setSelectedReport(null); setResolutionPhoto(null); }}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -287,10 +316,7 @@ export default function AdminDashboardPage() {
                             className="absolute bottom-1 right-1 bg-white dark:bg-gray-700 rounded-full p-1 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-600"
                             title="Buka di Google Maps"
                           >
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#4285F4"/>
-                              <path d="M12 2v7c0 3.5-4 8-4 8s4 3.5 4 7" fill="#FBBC05"/>
-                            </svg>
+                            <MapPin className="w-4 h-4" />
                           </button>
                         )}
                       </div>
@@ -383,9 +409,7 @@ export default function AdminDashboardPage() {
                       disabled={resolving}
                       className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                      <Check className="w-4 h-4" />
                       {resolving ? 'Menyimpan...' : 'Selesai'}
                     </button>
                     <button
@@ -393,9 +417,7 @@ export default function AdminDashboardPage() {
                       className="bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg flex items-center justify-center"
                       title="Hapus"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </>

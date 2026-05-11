@@ -8,6 +8,14 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Lightbox } from '@/components/Lightbox';
 import { logActivity } from '@/lib/activityLog';
 import { logReportHistory } from '@/lib/reportHistory';
+import {
+  Trash2,
+  X,
+  Check,
+  MapPin,
+  FileText,
+  ImageIcon,
+} from 'lucide-react';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -421,9 +429,7 @@ export default function AdminLaporanPage() {
                 onClick={() => { setSelectedReport(null); setResolutionPhoto(null); }}
                 className="text-gray-400 hover:text-gray-600 p-1"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -542,9 +548,7 @@ export default function AdminLaporanPage() {
                       disabled={resolving}
                       className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                      <Check className="w-4 h-4" />
                       {resolving ? 'Menyimpan...' : 'Selesai'}
                     </button>
                     <button
@@ -552,9 +556,7 @@ export default function AdminLaporanPage() {
                       className="bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg flex items-center justify-center"
                       title="Hapus"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </>
@@ -564,9 +566,7 @@ export default function AdminLaporanPage() {
                   onClick={() => setConfirmDelete({ open: true, id: selectedReport.id })}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg flex items-center justify-center gap-2"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  <Trash2 className="w-4 h-4" />
                   Hapus
                 </button>
               )}
