@@ -9,6 +9,9 @@ import { Lightbox } from '@/components/Lightbox';
 import { logActivity } from '@/lib/activityLog';
 import { logReportHistory } from '@/lib/reportHistory';
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
 interface Report {
   id: string;
   category: string;
@@ -96,20 +99,59 @@ export default function AdminLaporanPage() {
     if (!selectedReport) return;
     setResolving(true);
     try {
+      let resolutionPhotoUrl = selectedReport.resolution_photo_url || null;
+
+      // Upload resolution photo if exists
+      if (resolutionPhoto) {
+        const fileName = `reports/${selectedReport.id}/resolution_${Date.now()}.jpg`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('report-photos')
+          .upload(fileName, resolutionPhoto, { contentType: 'image/jpeg' });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+        } else {
+          const { data: urlData } = supabase.storage.from('report-photos').getPublicUrl(uploadData.path);
+          resolutionPhotoUrl = urlData.publicUrl;
+        }
+      }
+
       const { error: updateError } = await supabase
         .from('reports')
         .update({
           status: 'resolved',
+          resolution_photo_url: resolutionPhotoUrl,
+          resolved_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedReport.id);
 
       if (updateError) throw new Error(updateError.message);
 
+      // Send email notification to reporter
+      const reporterEmail = selectedReport.profiles?.email;
+      const reporterName = selectedReport.profiles?.full_name || 'Warga';
+      if (reporterEmail) {
+        await fetch(`${SUPABASE_URL}/functions/v1/send-report-resolved-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: reporterEmail,
+            fullName: reporterName,
+            categoryLabel: categoryLabels[selectedReport.category] || selectedReport.category,
+            description: selectedReport.description,
+            resolutionPhotoUrl: resolutionPhotoUrl || undefined,
+          }),
+        });
+      }
+
       setReports(reports.map(r => r.id === selectedReport.id ? { ...r, status: 'resolved' } : r));
       setSelectedReport(null);
       setResolutionPhoto(null);
-      showToast('Laporan berhasil ditandai selesai!', 'success');
+      showToast('Laporan berhasil ditandai selesai! Email notifikasi sudah dikirim.', 'success');
       await logActivity('resolve_report', `Menyelesaikan laporan: ${selectedReport.category}`);
       await logReportHistory(selectedReport.id, 'resolved', `Laporan diselesaikan oleh admin`);
     } catch (err: any) {
