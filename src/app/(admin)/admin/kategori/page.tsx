@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface Category {
   id: string;
@@ -18,6 +19,7 @@ export default function KategoriPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -77,10 +79,11 @@ export default function KategoriPage() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Hapus kategori ini?')) return;
-    await supabase.from('categories').delete().eq('id', id);
-    fetchCategories();
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await supabase.from('categories').delete().eq('id', deleteTarget);
+    setCategories(categories.filter(c => c.id !== deleteTarget));
+    setDeleteTarget(null);
   };
 
   const handleToggleActive = async (category: Category) => {
@@ -151,7 +154,7 @@ export default function KategoriPage() {
                 {category.is_active ? 'Nonaktif' : 'Aktifkan'}
               </button>
               <button
-                onClick={() => handleDelete(category.id)}
+                onClick={() => setDeleteTarget(category.id)}
                 className="flex-1 text-red-600 hover:bg-red-50 py-1.5 px-2 rounded text-xs border border-red-200"
               >
                 Hapus
@@ -170,28 +173,28 @@ export default function KategoriPage() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-semibold mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-semibold mb-4 dark:text-white">
               {editingCategory ? 'Edit Kategori' : 'Tambah Kategori'}
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nama Kategori
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
                   placeholder="Contoh: Jalan Rusak"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Icon
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -202,8 +205,8 @@ export default function KategoriPage() {
                       onClick={() => setFormData({ ...formData, icon })}
                       className={`w-10 h-10 text-2xl rounded-lg border-2 ${
                         formData.icon === icon
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
                       }`}
                     >
                       {icon}
@@ -213,13 +216,13 @@ export default function KategoriPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Deskripsi
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
                   rows={3}
                   placeholder="Deskripsi kategori..."
                 />
@@ -232,7 +235,7 @@ export default function KategoriPage() {
                     setShowModal(false);
                     setEditingCategory(null);
                   }}
-                  className="flex-1 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300"
                 >
                   Batal
                 </button>
@@ -247,6 +250,17 @@ export default function KategoriPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Hapus Kategori"
+        message="Apakah Anda yakin ingin menghapus kategori ini? Tindakan tidak dapat dibatalkan."
+        confirmText="Hapus"
+        cancelText="Batal"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        danger
+      />
     </div>
   );
 }

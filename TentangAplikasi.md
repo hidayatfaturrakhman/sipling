@@ -10,7 +10,7 @@
 
 ### 1. Sistem Autentikasi
 - **Registrasi & Login** - Warga dan admin dapat membuat akun dan masuk ke sistem
-- **Verifikasi Email** - Setiap pendaftar wajib verifikasi email sebelum可以使用 akun
+- **Verifikasi Email** - Setiap pendaftar wajib verifikasi email sebelum akun
 - **Role-based Access** - Dua role: Admin (pengelola) dan Warga (pelapor)
 
 ### 2. Dashboard Warga
@@ -57,7 +57,7 @@
 - **Filter & Search** - Mudah mencari laporan berdasarkan kategori, status, atau tanggal
 
 ### Bagi Lingkungan
-- **Perbaikan Lebih Cepat** - Laporan yang jelas加快了 penanganannya
+- **Perbaikan Lebih Cepat** - Laporan yang jelas penanganannya
 - **Prioritas Jelas** - Kategori membantuurutkan masalah berdasarkan jenis
 - **Transparansi** - Masyarakat bisa pantau progress perbaikan
 

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface User {
   id: string;
@@ -20,6 +21,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [filterRole, setFilterRole] = useState<string>('all');
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -62,11 +64,10 @@ export default function UsersPage() {
     setSelectedUser(null);
   };
 
-  const handleDelete = async (userId: string) => {
-    if (!confirm('Hapus user ini? User akan logout dan tidak bisa login lagi.')) return;
-
+  const handleDelete = async () => {
     // Note: Di Supabase, menghapus user dari auth.users butuh admin access
     // Ini hanya contoh - di production perlu server-side function
+    setDeleteTarget(null);
     alert('Fitur hapus user memerlukan konfigurasi tambahan di Supabase. Hubungi superadmin.');
   };
 
@@ -255,6 +256,12 @@ export default function UsersPage() {
 
             <div className="flex gap-3 mt-6">
               <button
+                onClick={() => setDeleteTarget(selectedUser.id)}
+                className="py-2 px-4 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
+              >
+                Hapus
+              </button>
+              <button
                 onClick={() => setSelectedUser(null)}
                 className="flex-1 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
@@ -270,6 +277,17 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Hapus User"
+        message="Apakah Anda yakin ingin menghapus user ini? User akan logout dan tidak bisa login lagi."
+        confirmText="Hapus"
+        cancelText="Batal"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        danger
+      />
     </div>
   );
 }
