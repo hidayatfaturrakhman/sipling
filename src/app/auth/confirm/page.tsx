@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-export default function ConfirmPage() {
+function ConfirmContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -25,7 +25,7 @@ export default function ConfirmPage() {
       const supabase = createClient();
 
       const { error } = await supabase.auth.verifyOtp({
-        type: type as 'signup' || 'email',
+        type: (type as 'signup') || 'email',
         email,
         token,
       });
@@ -85,5 +85,25 @@ export default function ConfirmPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Memuat...</h2>
+        <p className="text-gray-500">Mohon tunggu sebentar</p>
+      </div>
+    </div>
+  );
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ConfirmContent />
+    </Suspense>
   );
 }
