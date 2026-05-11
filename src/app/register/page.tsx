@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
 interface ValidationErrors {
   email?: string;
   password?: string;
@@ -190,6 +193,20 @@ export default function RegisterPage() {
       });
 
       if (signUpError) throw signUpError;
+
+      // Call custom Edge Function for email verification
+      const confirmUrl = `${window.location.origin}/auth/confirm?type=signup&email=${encodeURIComponent(formData.email)}`;
+      await fetch(`${SUPABASE_URL}/functions/v1/send-confirmation-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          confirmUrl,
+        }),
+      });
 
       const emailDomain = formData.email.split('@')[1] || '';
       const providers: Record<string, string> = {
