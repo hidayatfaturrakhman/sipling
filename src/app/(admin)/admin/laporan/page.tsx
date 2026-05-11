@@ -314,15 +314,15 @@ export default function AdminLaporanPage() {
             reports.map((report: Report) => (
               <div
                 key={report.id}
-                className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                onClick={() => setSelectedReport(report)}
+                className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <div className="flex gap-2 sm:gap-3">
                   {report.photo_url ? (
                     <img
                       src={report.photo_url?.split(',')[0]}
                       alt="Foto"
-                      className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
+                      className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                      onClick={() => { setSelectedReport(report); }}
                     />
                   ) : (
                     <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -340,13 +340,29 @@ export default function AdminLaporanPage() {
                         {report.status === 'pending' ? 'Menunggu' : 'Selesai'}
                       </span>
                     </div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-1">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-1 cursor-pointer" onClick={() => setSelectedReport(report)}>
                       {report.description || 'Tidak ada deskripsi'}
                     </p>
                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                       <span className="truncate">{report.profiles?.full_name || report.profiles?.email || '-'}</span>
                       <span className="whitespace-nowrap ml-1">{new Date(report.created_at).toLocaleDateString('id-ID')}</span>
                     </div>
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      onClick={() => setSelectedReport(report)}
+                      className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900 p-1.5 rounded text-xs"
+                      title="Detail"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete({ open: true, id: report.id })}
+                      className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 p-1.5 rounded text-xs"
+                      title="Hapus"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
